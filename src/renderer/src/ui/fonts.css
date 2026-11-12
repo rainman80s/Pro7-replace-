@@ -1,0 +1,11 @@
+/*
+ * Brand fonts. Perfectly Nineties, TAY Birdie and Marina Script are licensed fonts:
+ * if they are installed on the computer they are picked up via local(); to bundle
+ * them, drop the files in src/renderer/public/fonts/ (see docs/brand/README.md).
+ * "Reach Sans" is the neutral UI/slide sans stack alias.
+ */
+@font-face { font-family: 'Perfectly Nineties'; src: local('Perfectly Nineties'), local('PerfectlyNineties-Regular'), local('Perfectly Nineties Regular'); font-weight: 400; }
+@font-face { font-family: 'Perfectly Nineties'; src: local('Perfectly Nineties Semibold'), local('PerfectlyNineties-Semibold'); font-weight: 600; }
+@font-face { font-family: 'TAY Birdie'; src: local('TAY Birdie'), local('TAYBirdieRegular'), local('TAYBirdie-Regular'); }
+@font-face { font-family: 'Marina Script'; src: local('Marina Script'), local('MarinaScriptRegular'); }
+@font-face { font-family: 'Reach Sans'; src: local('Inter'), local('SF Pro Display'), local('Helvetica Neue'), local('Segoe UI'), local('Arial'); font-weight: 100 900; }

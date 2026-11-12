@@ -1,0 +1,4 @@
+Source: https://github.com/greyshirtguy/ProPresenter7-Proto
+Commit: 7607ba943c8fae7dcf7eed7f06086b92af378fc7 Wed Nov 11 02:53:52 2026 +0000
+License: MIT (see LICENSE)
+Note: .git removed. autogen-proto/ = latest (auto-dumped via protodump). Unofficial, reverse-engineered; not endorsed by Renewed Vision.

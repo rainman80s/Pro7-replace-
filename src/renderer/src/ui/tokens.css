@@ -1,0 +1,36 @@
+/* Reach brand tokens — see docs/brand/README.md. The operator UI is dark (booth-friendly), built on Charcoal. */
+:root {
+  --charcoal: #292929;
+  --lakeside: #3886ce;
+  --mustard: #e6a20f;
+  --paper: #f4f2eb;
+  --white: #ffffff;
+
+  --bg: #1f1f1f;
+  --bg-raised: #292929;
+  --bg-sunken: #181818;
+  --bg-hover: #333333;
+  --border: #3a3a3a;
+  --text: #f4f2eb;
+  --text-dim: #a9a7a1;
+  --text-faint: #6f6e6a;
+  --accent: var(--lakeside);
+  --live: var(--mustard);
+  --danger: #d8523f;
+  --ok: #4fa88b;
+
+  --font-display: 'Perfectly Nineties', 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font-label: 'TAY Birdie', 'Reach Sans', system-ui, sans-serif;
+  --font-ui: 'Reach Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Courier Prime', 'Courier New', ui-monospace, monospace;
+
+  --radius: 8px;
+  --radius-sm: 5px;
+  --gap: 12px;
+}
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--text); font: 13px/1.4 var(--font-ui); -webkit-font-smoothing: antialiased; user-select: none; overflow: hidden; }
+input, textarea, select, button { font: inherit; color: inherit; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #444; border-radius: 5px; border: 2px solid transparent; background-clip: content-box; }

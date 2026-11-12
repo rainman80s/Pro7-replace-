@@ -1,0 +1,11 @@
+.app { display: grid; grid-template-rows: 46px 1fr; height: 100%; }
+.topbar { display: flex; align-items: center; gap: 10px; padding: 0 12px; background: var(--bg-raised); border-bottom: 1px solid var(--border); -webkit-app-region: drag; }
+.app[data-platform='darwin'] .topbar { padding-left: 84px; }
+.topbar button, .topbar input, .topbar select { -webkit-app-region: no-drag; }
+.brand { font: 600 20px/1 var(--font-display); letter-spacing: -.01em; color: var(--paper); margin-right: 6px; }
+.nav { display: flex; gap: 2px; }
+.nav-item { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-dim); cursor: pointer; font: 11px/1 var(--font-label); letter-spacing: .12em; text-transform: uppercase; }
+.nav-item:hover { color: var(--text); background: var(--bg-hover); }
+.nav-item.on { color: var(--text); background: var(--bg-sunken); box-shadow: inset 0 -2px 0 var(--mustard); }
+.clears { display: flex; gap: 4px; }
+.main { min-height: 0; min-width: 0; }

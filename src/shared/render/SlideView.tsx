@@ -1,0 +1,225 @@
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import type { Fill, MediaRef, Size, SlideElement, TextElement, TextStyle, Shadow } from '../model'
+import { mediaUrl } from '../media'
+
+/** Values for dynamic text tokens, e.g. { clock: '10:42', 'current.text': '...', 'timer:abc': '4:59' }. */
+export type Tokens = Record<string, string>
+
+export function fillStyle(fill?: Fill): CSSProperties {
+  if (!fill) return {}
+  if (fill.type === 'color') return { background: fill.color }
+  if (fill.type === 'gradient') {
+    return { background: `linear-gradient(${fill.angle}deg, ${fill.stops.map((s) => `${s.color} ${Math.round(s.at * 100)}%`).join(', ')})` }
+  }
+  return {}
+}
+
+const shadowCss = (s?: Shadow): string | undefined => (s ? `${s.x}px ${s.y}px ${s.blur}px ${s.color}` : undefined)
+
+export function textStyleCss(s: TextStyle | undefined): CSSProperties {
+  if (!s) return {}
+  const css: CSSProperties = {}
+  if (s.fontFamily) css.fontFamily = `"${s.fontFamily}", var(--slide-font-fallback, "Reach Sans", "Inter", "Helvetica Neue", Arial, sans-serif)`
+  if (s.fontSize) css.fontSize = s.fontSize
+  if (s.fontWeight) css.fontWeight = s.fontWeight as CSSProperties['fontWeight']
+  if (s.italic) css.fontStyle = 'italic'
+  if (s.underline) css.textDecoration = 'underline'
+  if (s.color) css.color = s.color
+  if (s.letterSpacing) css.letterSpacing = s.letterSpacing
+  if (s.lineHeight) css.lineHeight = s.lineHeight
+  if (s.textTransform) css.textTransform = s.textTransform
+  if (s.strokeWidth) {
+    ;(css as Record<string, unknown>).WebkitTextStroke = `${s.strokeWidth}px ${s.strokeColor ?? '#000'}`
+    ;(css as Record<string, unknown>).paintOrder = 'stroke fill'
+  }
+  if (s.shadow) css.textShadow = shadowCss(s.shadow)
+  return css
+}
+
+export function applyTokens(text: string, tokens?: Tokens): string {
+  if (!tokens) return text
+  return text.replace(/\{([^{}]+)\}/g, (m, k: string) => (k.trim() in tokens ? tokens[k.trim()] : m))
+}
+
+function MediaFill({ media, fit, video }: { media: MediaRef; fit?: string; video?: Partial<{ loop: boolean; muted: boolean }> }): ReactNode {
+  const style: CSSProperties = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: fit === 'stretch' ? 'fill' : ((fit ?? 'cover') as 'cover' | 'contain') }
+  if (media.kind === 'video') return <video src={mediaUrl(media)} style={style} autoPlay playsInline loop={video?.loop ?? true} muted={video?.muted ?? true} />
+  return <img src={mediaUrl(media)} style={style} draggable={false} alt="" />
+}
+
+function TextBox({ el, tokens }: { el: TextElement; tokens?: Tokens }): ReactNode {
+  const outer = useRef<HTMLDivElement>(null)
+  const inner = useRef<HTMLDivElement>(null)
+  const [k, setK] = useState(1)
+  const text = el.paragraphs.map((p) => p.runs.map((r) => r.text).join('')).join('\n')
+  const tokenKey = el.dynamic && tokens ? JSON.stringify(tokens) : ''
+
+  // Auto-fit: shrink the text until it fits its frame.
+  useLayoutEffect(() => {
+    if (!el.autoFit || !outer.current || !inner.current) return void setK(1)
+    const box = outer.current
+    const node = inner.current
+    const pad = (el.padding ?? 0) * 2
+    const fits = (scale: number): boolean => {
+      node.style.transform = `scale(${scale})`
+      node.style.width = `${100 / scale}%`
+      return node.scrollHeight * scale <= box.clientHeight - pad + 1 && node.scrollWidth * scale <= box.clientWidth - pad + 1
+    }
+    let lo = 0.15
+    let hi = 1
+    if (!fits(1)) {
+      for (let i = 0; i < 9; i++) {
+        const mid = (lo + hi) / 2
+        if (fits(mid)) lo = mid
+        else hi = mid
+      }
+      hi = lo
+    }
+    node.style.transform = ''
+    node.style.width = ''
+    setK(hi)
+  }, [text, tokenKey, el.autoFit, el.frame.w, el.frame.h, el.style.fontSize, el.style.fontFamily, el.padding])
+
+  const align = el.align ?? 'center'
+  const v = el.verticalAlign ?? 'middle'
+  return (
+    <div
+      ref={outer}
+      style={{
+        position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', padding: el.padding ?? 0, overflow: 'hidden',
+        justifyContent: v === 'top' ? 'flex-start' : v === 'bottom' ? 'flex-end' : 'center', borderRadius: el.cornerRadius,
+        ...fillStyle(el.fill)
+      }}
+    >
+      {el.fill?.type === 'media' && <MediaFill media={el.fill.media} fit={el.fill.fit} />}
+      <div
+        ref={inner}
+        style={{
+          position: 'relative', whiteSpace: 'pre-wrap', overflowWrap: 'break-word', lineHeight: 1.2, ...textStyleCss(el.style),
+          transform: k !== 1 ? `scale(${k})` : undefined, width: k !== 1 ? `${100 / k}%` : undefined,
+          transformOrigin: `${align === 'left' || align === 'justify' ? 'left' : align === 'right' ? 'right' : 'center'} ${v === 'top' ? 'top' : v === 'bottom' ? 'bottom' : 'center'}`,
+          alignSelf: align === 'left' || align === 'justify' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center'
+        }}
+      >
+        {el.paragraphs.map((p, i) => (
+          <div key={i} style={{ textAlign: p.align ?? align, minHeight: '1em' }}>
+            {p.runs.map((r, j) => (
+              <span key={j} style={textStyleCss(r.style)}>{el.dynamic ? applyTokens(r.text, tokens) : r.text}</span>
+            ))}
+            {p.runs.every((r) => !r.text) && '​'}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function ElementView({ el, tokens, interactive }: { el: SlideElement; tokens?: Tokens; interactive?: boolean }): ReactNode {
+  if (el.hidden) return null
+  const base: CSSProperties = {
+    position: 'absolute', left: el.frame.x, top: el.frame.y, width: el.frame.w, height: el.frame.h,
+    opacity: el.opacity ?? 1, transform: el.rotation ? `rotate(${el.rotation}deg)` : undefined,
+    boxShadow: el.type !== 'text' ? shadowCss(el.shadow) : undefined,
+    outline: el.stroke ? `${el.stroke.width}px solid ${el.stroke.color}` : undefined,
+    outlineOffset: el.stroke ? -el.stroke.width : undefined,
+    borderRadius: el.cornerRadius, overflow: el.type === 'text' ? undefined : 'hidden', pointerEvents: interactive ? undefined : 'none'
+  }
+  let body: ReactNode = null
+  if (el.type === 'text') body = <TextBox el={el} tokens={tokens} />
+  else if (el.type === 'shape') {
+    if (el.shape === 'ellipse') base.borderRadius = '50%'
+    if (el.shape === 'line') {
+      body = <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', height: el.stroke?.width ?? 4, marginTop: -(el.stroke?.width ?? 4) / 2, background: el.stroke?.color ?? '#fff' }} />
+      base.outline = undefined
+    } else {
+      Object.assign(base, fillStyle(el.fill))
+      if (el.fill?.type === 'media') body = <MediaFill media={el.fill.media} fit={el.fill.fit} />
+    }
+  } else if (el.type === 'image') body = <MediaFill media={el.media} fit={el.fit ?? 'contain'} />
+  else if (el.type === 'video') body = <MediaFill media={el.media} fit={el.fit ?? 'contain'} video={{ loop: el.loop ?? false, muted: el.muted ?? true }} />
+  else if (el.type === 'live') {
+    body = el.source.kind === 'web'
+      ? <iframe src={el.source.ref} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }} />
+      : <LiveSourcePlaceholder el={el} />
+  }
+  return <div data-el={el.id} style={base}>{body}</div>
+}
+
+/** Replaced at runtime by features that provide live inputs (camera/NDI). */
+export const liveSourceRenderers: Record<string, (ref: string) => ReactNode> = {}
+function LiveSourcePlaceholder({ el }: { el: Extract<SlideElement, { type: 'live' }> }): ReactNode {
+  const r = liveSourceRenderers[el.source.kind]
+  if (r) return r(el.source.ref)
+  return <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: '#888', background: '#111', fontSize: 28 }}>Live: {el.source.kind}</div>
+}
+
+export interface SlideViewProps {
+  elements: SlideElement[]
+  background?: Fill
+  size: Size
+  tokens?: Tokens
+  /** Reveal only elements whose buildIn <= build. Undefined = show all. */
+  build?: number
+  /** Draw the background (false for live outputs where the slide floats over a media layer). */
+  opaque?: boolean
+  style?: CSSProperties
+  children?: ReactNode
+}
+
+/** Draws a slide at its design size (unscaled). Wrap in <Fit> to scale it into a container. */
+export function SlideView({ elements, background, size, tokens, build, opaque, style, children }: SlideViewProps): ReactNode {
+  return (
+    <div style={{ position: 'relative', width: size.width, height: size.height, overflow: 'hidden', background: opaque ? '#000' : undefined, ...style }}>
+      {background && (
+        <div style={{ position: 'absolute', inset: 0, ...fillStyle(background) }}>
+          {background.type === 'media' && <MediaFill media={background.media} fit={background.fit} />}
+        </div>
+      )}
+      {elements.map((el) => (build === undefined || (el.buildIn ?? 0) <= build ? <ElementView key={el.id} el={el} tokens={tokens} /> : null))}
+      {children}
+    </div>
+  )
+}
+
+/** Scales fixed-size content to fit its container (contain / cover / stretch), centered. */
+export function Fit({ size, fit = 'contain', children, style, className }: { size: Size; fit?: 'contain' | 'cover' | 'stretch'; children: ReactNode; style?: CSSProperties; className?: string }): ReactNode {
+  const ref = useRef<HTMLDivElement>(null)
+  const [box, setBox] = useState<{ w: number; h: number } | null>(null)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const measure = (): void => setBox({ w: el.clientWidth, h: el.clientHeight })
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  let sx = 1
+  let sy = 1
+  if (box) {
+    const kx = box.w / size.width
+    const ky = box.h / size.height
+    if (fit === 'stretch') { sx = kx; sy = ky }
+    else sx = sy = fit === 'cover' ? Math.max(kx, ky) : Math.min(kx, ky)
+  }
+  return (
+    <div ref={ref} className={className} style={{ position: 'relative', overflow: 'hidden', width: '100%', height: '100%', ...style }}>
+      {box && (
+        <div style={{ position: 'absolute', left: (box.w - size.width * sx) / 2, top: (box.h - size.height * sy) / 2, width: size.width, height: size.height, transform: `scale(${sx}, ${sy})`, transformOrigin: '0 0' }}>
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** A self-scaling slide thumbnail that keeps the slide's aspect ratio. */
+export function SlideThumb({ elements, background, size, tokens, style, className, children }: SlideViewProps & { className?: string }): ReactNode {
+  return (
+    <div className={className} style={{ aspectRatio: `${size.width} / ${size.height}`, width: '100%', background: '#000', ...style }}>
+      <Fit size={size}>
+        <SlideView elements={elements} background={background} size={size} tokens={tokens} opaque>{children}</SlideView>
+      </Fit>
+    </div>
+  )
+}
