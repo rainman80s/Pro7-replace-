@@ -70,5 +70,8 @@
       }
     ]
   },
-  "private": true
+  "private": true,
+  "optionalDependencies": {
+    "@julusian/midi": "^3.8.1"
+  }
 }
