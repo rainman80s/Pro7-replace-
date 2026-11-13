@@ -1,12 +1,20 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import type { Canvas, LayerId, LiveMedia, LiveSlide, LiveState, Region, StageLayout, TimerState, WorkspaceConfig } from '../model'
+import type { Canvas, LayerId, LiveMedia, LiveSlide, LiveState, Rect, Region, StageLayout, TimerState, WorkspaceConfig } from '../model'
 import { resolveSlideForCanvas, slideText } from '../model'
 import { mediaUrl } from '../media'
 import { Fit, SlideView, type Tokens } from './SlideView'
 
 /* ───────── time helpers shared by outputs, stage screens and the operator UI ───────── */
 
-export function timerSeconds(t: TimerState, now = Date.now()): number {
+/**
+ * Network receivers estimate how far their clock is from the host's (NTP-style, see @shared/outputs ClockSync)
+ * and set it here, so video positions (`LiveMedia.startedAt`) and timers agree on every screen.
+ */
+let clockOffsetMs = 0
+export function setClockOffset(ms: number): void { clockOffsetMs = Number.isFinite(ms) ? ms : 0 }
+export function serverNow(): number { return Date.now() + clockOffsetMs }
+
+export function timerSeconds(t: TimerState, now = serverNow()): number {
   if (t.kind === 'countdownTo' && t.target) {
     const [h, m] = t.target.split(':').map(Number)
     const d = new Date(now)
@@ -27,10 +35,10 @@ export function formatDuration(sec: number): string {
 }
 
 export function useNow(intervalMs = 250, active = true): number {
-  const [now, setNow] = useState(Date.now())
+  const [now, setNow] = useState(serverNow())
   useEffect(() => {
     if (!active) return
-    const t = setInterval(() => setNow(Date.now()), intervalMs)
+    const t = setInterval(() => setNow(serverNow()), intervalMs)
     return () => clearInterval(t)
   }, [intervalMs, active])
   return now
@@ -132,14 +140,16 @@ export interface LiveCanvasProps {
   audio?: boolean
   /** Draw region guides (operator previews). */
   showRegions?: boolean
+  /** No black backdrop and no background layer (OBS browser source / NDI with alpha). */
+  transparent?: boolean
 }
 
 /** The full layer stack for one canvas at its native pixel size. */
-export function LiveCanvas({ canvas, live, workspace, stageLayout, audio, showRegions }: LiveCanvasProps): ReactNode {
+export function LiveCanvas({ canvas, live, workspace, stageLayout, audio, showRegions, transparent }: LiveCanvasProps): ReactNode {
   const dynamic = canvas.kind === 'stage' || live.timers.some((t) => t.running) || true
   const now = useNow(250, dynamic)
   const tokens = liveTokens(live, now)
-  const on = (l: LayerId): boolean => canvas.layers?.[l] !== false && !live.cleared[l]
+  const on = (l: LayerId): boolean => canvas.layers?.[l] !== false && !live.cleared[l] && !(transparent && l === 'background')
   const full: CSSProperties = { position: 'absolute', inset: 0 }
 
   let content: ReactNode
@@ -177,7 +187,7 @@ export function LiveCanvas({ canvas, live, workspace, stageLayout, audio, showRe
   }
 
   return (
-    <div style={{ position: 'relative', width: canvas.width, height: canvas.height, background: '#000', overflow: 'hidden' }}>
+    <div style={{ position: 'relative', width: canvas.width, height: canvas.height, background: transparent ? 'transparent' : '#000', overflow: 'hidden' }}>
       <style>{'@keyframes reach-fade-in{from{opacity:0}to{opacity:1}}'}</style>
       {content}
       {showRegions && canvas.regions.map((r) => <RegionGuide key={r.id} region={r} />)}
@@ -219,14 +229,15 @@ function DefaultStage({ live, tokens, canvas }: { live: LiveState; tokens: Token
 }
 
 /**
- * What a physical output shows: the canvas (or one region of it) scaled to fill the window.
+ * What a physical output shows: the canvas (or one region / video-wall cell of it) scaled into the window.
+ * `crop` (canvas pixels) wins over `regionId`.
  */
-export function OutputSurface({ regionId, fit = 'contain', ...props }: LiveCanvasProps & { regionId?: string; fit?: 'contain' | 'cover' | 'stretch' }): ReactNode {
+export function OutputSurface({ regionId, crop, fit = 'contain', ...props }: LiveCanvasProps & { regionId?: string; crop?: Rect; fit?: 'contain' | 'cover' | 'stretch' }): ReactNode {
   const region = regionId ? props.canvas.regions.find((r) => r.id === regionId) : undefined
-  const size = region ? { width: region.rect.w, height: region.rect.h } : { width: props.canvas.width, height: props.canvas.height }
+  const src: Rect = crop ?? region?.rect ?? { x: 0, y: 0, w: props.canvas.width, h: props.canvas.height }
   return (
-    <Fit size={size} fit={fit} style={{ background: '#000' }}>
-      <div style={{ position: 'absolute', left: region ? -region.rect.x : 0, top: region ? -region.rect.y : 0 }}>
+    <Fit size={{ width: src.w, height: src.h }} fit={fit} style={{ background: props.transparent ? 'transparent' : '#000' }}>
+      <div style={{ position: 'absolute', left: -src.x, top: -src.y }}>
         <LiveCanvas {...props} />
       </div>
     </Fit>

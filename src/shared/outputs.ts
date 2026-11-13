@@ -110,6 +110,10 @@ declare module './api' {
     'receivers.forget': { req: { id: string }; res: ReceiverInfo[] }
     /** What mDNS found on the network (other Reach computers, Cast / AirPlay capable devices). */
     'discovery.scan': { req: { refresh?: boolean } | void; res: DiscoveryState }
+    /** Test/dev only (local): replace the real display list with a simulated one (null = real displays again). */
+    'outputs.simulateDisplays': { req: { displays: DisplaySnapshot[] | null }; res: DisplayInfo[] }
+    /** Test/dev only (local): crash an output window's renderer to exercise auto-recovery. */
+    'outputs.crashForTest': { req: { id: ID }; res: boolean }
   }
   interface ApiEvents {
     'outputs.healthChanged': OutputHealth[]
