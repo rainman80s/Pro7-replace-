@@ -4,6 +4,12 @@ import { createRoot } from 'react-dom/client'
 import { create } from 'zustand'
 import { Icon, type IconName } from './icons'
 
+/**
+ * The UI scale setting applies CSS `zoom` to <html>. Pointer and getBoundingClientRect() values are
+ * in visual pixels, while `position: fixed` offsets are in zoomed CSS pixels — divide by this.
+ */
+export const uiZoom = (): number => (typeof document === 'undefined' ? 1 : Number(document.documentElement.style.zoom) || 1)
+
 /* ───────────── focus helpers ───────────── */
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -103,7 +109,8 @@ export function Tooltip({ label, shortcut, children, side = 'bottom' }: { label:
     if (timer.current) clearTimeout(timer.current)
     timer.current = setTimeout(() => {
       const r = el.getBoundingClientRect()
-      setPos({ x: r.left + r.width / 2, y: side === 'top' ? r.top - 8 : r.bottom + 8 })
+      const z = uiZoom()
+      setPos({ x: (r.left + r.width / 2) / z, y: (side === 'top' ? r.top - 8 : r.bottom + 8) / z })
     }, delay)
   }
   const hide = (): void => { if (timer.current) clearTimeout(timer.current); setPos(null) }
@@ -120,7 +127,7 @@ export function Tooltip({ label, shortcut, children, side = 'bottom' }: { label:
         onBlur: chain('onBlur', hide)
       })}
       {pos && createPortal(
-        <div role="tooltip" className="tooltip" style={{ left: Math.max(8, Math.min(window.innerWidth - 8, pos.x)), top: pos.y, transform: `translate(-50%, ${side === 'top' ? '-100%' : '0'})` }}>
+        <div role="tooltip" className="tooltip" style={{ left: Math.max(8, Math.min(window.innerWidth / uiZoom() - 8, pos.x)), top: pos.y, transform: `translate(-50%, ${side === 'top' ? '-100%' : '0'})` }}>
           {label}{shortcut && <kbd className="kbd">{shortcut}</kbd>}
         </div>,
         document.body
@@ -155,12 +162,15 @@ export function openContextMenu(e: { clientX: number; clientY: number; preventDe
   const list = clean(items)
   if (!list.length) return
   ensureHost()
-  useMenu.setState({ menu: { x: e.clientX, y: e.clientY, items: list } })
+  const z = uiZoom()
+  useMenu.setState({ menu: { x: e.clientX / z, y: e.clientY / z, items: list } })
 }
 
 /** Open a menu attached to an element (dropdown). */
 export function openMenuAt(el: Element, items: MenuItems, opts?: { align?: 'start' | 'end' }): void {
-  const r = el.getBoundingClientRect()
+  const z = uiZoom()
+  const b = el.getBoundingClientRect()
+  const r = new DOMRect(b.x / z, b.y / z, b.width / z, b.height / z)
   const list = clean(items)
   if (!list.length) return
   ensureHost()
@@ -196,11 +206,13 @@ function MenuPopup({ menu }: { menu: OpenMenu }): ReactNode {
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
-    const r = el.getBoundingClientRect()
+    const z = uiZoom()
+    const r = { width: el.offsetWidth, height: el.offsetHeight }
+    const vw = window.innerWidth / z, vh = window.innerHeight / z
     let left = menu.alignEnd ? menu.x - r.width : menu.x
     let top = menu.y
-    if (left + r.width > window.innerWidth - 8) left = window.innerWidth - r.width - 8
-    if (top + r.height > window.innerHeight - 8) top = menu.anchor ? Math.max(8, menu.anchor.top - r.height - 4) : Math.max(8, window.innerHeight - r.height - 8)
+    if (left + r.width > vw - 8) left = vw - r.width - 8
+    if (top + r.height > vh - 8) top = menu.anchor ? Math.max(8, menu.anchor.top - r.height - 4) : Math.max(8, vh - r.height - 8)
     setStyle({ left: Math.max(8, left), top, minWidth: menu.minWidth })
     const previous = document.activeElement as HTMLElement | null
     el.querySelector<HTMLElement>('.menu-item:not(:disabled)')?.focus({ preventScroll: true })

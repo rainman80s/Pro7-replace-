@@ -36,3 +36,16 @@ export function Logo({ variant = 'wordmark', height = 24, clear, className = '',
     </svg>
   )
 }
+
+/**
+ * The default "logo" screen for outputs: the vertical combo mark in Paper on Charcoal, 1920×1080.
+ * Small enough to store inline as `workspace.logo.src` (data: URIs pass straight through mediaUrl()).
+ */
+export function logoScreenSvg(width = 1920, height = 1080): string {
+  const [, , w, h] = LOGO_COMBO.viewBox.split(' ').map(Number)
+  const scale = (height * 0.34) / h
+  const x = (width - w * scale) / 2
+  const y = (height - h * scale) / 2
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}"><rect width="${width}" height="${height}" fill="#292929"/><path fill="#F4F2EB" transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${scale.toFixed(4)})" d="${LOGO_COMBO.d}"/></svg>`
+}
+export const LOGO_SCREEN_DATA_URI = `data:image/svg+xml;utf8,${encodeURIComponent(logoScreenSvg())}`
