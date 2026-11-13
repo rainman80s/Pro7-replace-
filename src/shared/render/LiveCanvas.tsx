@@ -1,6 +1,8 @@
 import { memo, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import type { Canvas, LayerId, LiveMedia, LiveSlide, LiveState, Rect, Region, Slide, StageLayout, TimerState, Transition, WorkspaceConfig } from '../model'
 import { resolveSlideForCanvas, slideText } from '../model'
+import type { Theme } from '../model'
+import { resolveSlideWithCanvasTheme } from '../themes'
 import { mediaUrl } from '../media'
 import { driftCorrection, mediaPosition } from '../outputs'
 import { Fit, SlideView, type Tokens } from './SlideView'
@@ -200,14 +202,14 @@ function TransitionStack({ id, transition, children }: { id: string; transition?
   )
 }
 
-const SlideLayer = memo(function SlideLayer({ ls, canvas, tokens }: { ls: LiveSlide; canvas: Canvas; tokens: Tokens }): ReactNode {
-  const r = resolveSlideForCanvas(ls.slide, ls.size, canvas)
+const SlideLayer = memo(function SlideLayer({ ls, canvas, tokens, theme }: { ls: LiveSlide; canvas: Canvas; tokens: Tokens; theme?: Theme | null }): ReactNode {
+  const r = (theme && resolveSlideWithCanvasTheme(ls.slide, ls.size, canvas, [theme])) || resolveSlideForCanvas(ls.slide, ls.size, canvas)
   return (
     <Fit size={r.size}>
       <SlideView elements={r.elements} background={r.background} size={r.size} tokens={tokens} build={ls.build} />
     </Fit>
   )
-}, (a, b) => a.ls === b.ls && a.canvas === b.canvas && (a.tokens === b.tokens || !hasDynamic(a.ls.slide) || JSON.stringify(a.tokens) === JSON.stringify(b.tokens)))
+}, (a, b) => a.ls === b.ls && a.canvas === b.canvas && a.theme === b.theme && (a.tokens === b.tokens || !hasDynamic(a.ls.slide) || JSON.stringify(a.tokens) === JSON.stringify(b.tokens)))
 
 const hasDynamic = (s: Slide): boolean => s.elements.some((e) => e.type === 'text' && e.dynamic) || Object.values(s.variants ?? {}).some((v) => v.elements.some((e) => e.type === 'text' && e.dynamic))
 
@@ -231,10 +233,12 @@ export interface LiveCanvasProps {
   showRegions?: boolean
   /** No black backdrop and no background layer (OBS browser source / NDI with alpha). */
   transparent?: boolean
+  /** Canvas default theme for slides without a per-screen layout. */
+  canvasTheme?: Theme | null
 }
 
 /** The full layer stack for one canvas at its native pixel size. */
-export function LiveCanvas({ canvas, live: incoming, workspace, stageLayout, audio, showRegions, transparent }: LiveCanvasProps): ReactNode {
+export function LiveCanvas({ canvas, live: incoming, workspace, stageLayout, audio, showRegions, transparent, canvasTheme }: LiveCanvasProps): ReactNode {
   // Freeze: keep showing the last picture from before `frozen` went on (videos pause), until it is released.
   const held = useRef<LiveState>(incoming)
   if (!incoming.frozen) held.current = incoming
@@ -271,14 +275,14 @@ export function LiveCanvas({ canvas, live: incoming, workspace, stageLayout, aud
         {on('slide') && (
           <div style={full} data-layer="slide">
             <TransitionStack id={live.slide ? `${live.slide.presentationId}:${live.slide.slideId}:${live.slide.index}` : 'none'} transition={slideT}>
-              {live.slide ? <SlideLayer ls={live.slide} canvas={canvas} tokens={tokens} /> : null}
+              {live.slide ? <SlideLayer ls={live.slide} canvas={canvas} tokens={tokens} theme={canvasTheme} /> : null}
             </TransitionStack>
           </div>
         )}
         {on('announcement') && (
           <div style={full} data-layer="announcement">
             <TransitionStack id={live.announcement ? `${live.announcement.presentationId}:${live.announcement.slideId}:${live.announcement.index}` : 'none'} transition={live.announcement?.transition ?? DEFAULT_SLIDE_TRANSITION}>
-              {live.announcement ? <SlideLayer ls={live.announcement} canvas={canvas} tokens={tokens} /> : null}
+              {live.announcement ? <SlideLayer ls={live.announcement} canvas={canvas} tokens={tokens} theme={canvasTheme} /> : null}
             </TransitionStack>
           </div>
         )}

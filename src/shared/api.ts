@@ -139,6 +139,8 @@ export interface OutputDescription {
   canvas: WorkspaceConfig['canvases'][number]
   workspace: WorkspaceConfig
   stageLayout?: StageLayout | null
+  /** The canvas's default theme (canvas.themeId), so outputs can style slides that have no per-screen layout. */
+  canvasTheme?: Theme | null
 }
 
 export interface ApiEvents {

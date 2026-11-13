@@ -1,5 +1,5 @@
 import { app, globalShortcut } from 'electron'
-import type { ID, Output, StageLayout } from '@shared/model'
+import type { ID, Output, StageLayout, Theme } from '@shared/model'
 import type { OutputDescription } from '@shared/api'
 import {
   CANVAS_PRESETS, isGroup, resolveOutputs, type AudioRoute, type NdiStatus, type OutputHealth, type ReceiverHello
@@ -120,13 +120,14 @@ async function describe(req: { outputId?: ID; receiverId?: string; canvasId?: ID
     const layouts = await ctx.workspace.readDoc<StageLayout[]>('stageLayouts', [])
     stageLayout = layouts.find((l) => l.id === canvas.stageLayoutId) ?? layouts[0] ?? null
   }
+  const canvasTheme = canvas.themeId ? ((await ctx.workspace.readDoc<Theme[]>('themes', [])).find((t) => t.id === canvas.themeId) ?? null) : null
   const regionId = resolved ? resolved.regionId : req.regionId
   const crop = resolved?.crop ?? (regionId ? canvas.regions.find((r) => r.id === regionId)?.rect : undefined)
   const virtual: Output | null = output
     ? { ...output, canvasId: canvas.id, regionId }
     : req.canvasId ? { id: 'preview', name: 'Preview', canvasId: canvas.id, regionId, target: { type: 'window' }, enabled: true } : null
   return {
-    output: virtual, canvas, workspace: ws, stageLayout, crop,
+    output: virtual, canvas, workspace: ws, stageLayout, canvasTheme, crop,
     audio: !!output && audioOutputId() === output.id,
     enabled: (resolved ? resolved.enabled : true) && !safeMode,
     receiver, serverTime: Date.now()

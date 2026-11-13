@@ -219,7 +219,7 @@ function Output(): ReactNode {
         <div style={innerStyle}>
           {desc.enabled === false ? null : pattern
             ? <TestPattern pattern={pattern} canvas={desc.canvas} crop={desc.crop} title={desc.output?.name ?? desc.canvas.name} width={inner.width} height={inner.height} />
-            : <OutputSurface canvas={desc.canvas} crop={desc.crop} regionId={desc.output?.regionId} live={live} workspace={desc.workspace} stageLayout={desc.stageLayout} fit={t?.fit ?? 'contain'} audio={desc.audio || q.get('audio') === '1'} transparent={transparent} />}
+            : <OutputSurface canvas={desc.canvas} crop={desc.crop} regionId={desc.output?.regionId} live={live} workspace={desc.workspace} stageLayout={desc.stageLayout} canvasTheme={desc.canvasTheme} fit={t?.fit ?? 'contain'} audio={desc.audio || q.get('audio') === '1'} transparent={transparent} />}
         </div>
       </div>
       {overlay}
