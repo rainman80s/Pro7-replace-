@@ -2,7 +2,7 @@ import { app, globalShortcut } from 'electron'
 import type { ID, Output, StageLayout } from '@shared/model'
 import type { OutputDescription } from '@shared/api'
 import {
-  CANVAS_PRESETS, isGroup, type AudioRoute, type NdiStatus, type OutputHealth, type ReceiverHello
+  CANVAS_PRESETS, isGroup, resolveOutputs, type AudioRoute, type NdiStatus, type OutputHealth, type ReceiverHello
 } from '@shared/outputs'
 import { defineService, type ServiceContext } from '../../core/service'
 import { newId } from '../../core/files'
@@ -108,7 +108,8 @@ async function describe(req: { outputId?: ID; receiverId?: string; canvasId?: ID
   const ws = ctx.workspace.config
   const outputs = getOutputs()
   const output = outputs.find((o) => !isGroup(o) && (o.id === req.outputId || (req.receiverId && o.target.type === 'network' && o.target.receiverId === req.receiverId))) ?? null
-  const resolved = output ? (plan?.resolved.get(output.id) ?? planOutputs({ outputs, canvases: ws.canvases, displays: [], receivers: [], safeMode, ndiAvailable: false }).resolved.get(output.id)) : undefined
+  // Resolve fresh (cheap): the coalesced plan can lag the `outputs.changed` event that triggered this call.
+  const resolved = output ? resolveOutputs(outputs, ws.canvases).get(output.id) : undefined
   const canvasId = resolved?.canvasId ?? req.canvasId ?? (req.receiverId ? undefined : ws.canvases[0]?.id)
   const rec = req.receiverId ? registry.get(req.receiverId) : undefined
   const receiver = rec ? { id: rec.id, name: rec.name } : null

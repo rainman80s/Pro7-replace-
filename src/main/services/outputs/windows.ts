@@ -157,7 +157,8 @@ export class OutputWindows {
     const p = e.plan
     const wc = e.win.webContents
     wc.setFrameRate(p.fps)
-    const pump = new FramePump(this.makeSink(), { name: p.name, width: p.size.width, height: p.size.height, fps: p.fps, alpha: p.transparent })
+    // NDI receivers expect a steady rate: when the page is static the last frame is re-sent every frame interval (same buffer, no copy).
+    const pump = new FramePump(this.makeSink(), { name: p.name, width: p.size.width, height: p.size.height, fps: p.fps, alpha: p.transparent, keepAliveMs: Math.round(1000 / p.fps) })
     e.pump = pump
     pump.start().catch((err) => { console.warn('[outputs] frame sink failed', err); pump.stats.lastError = String(err) })
     wc.on('paint', (_ev, _dirty, image) => {

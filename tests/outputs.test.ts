@@ -235,3 +235,19 @@ describe('canvas presets', () => {
     expect(CANVAS_PRESETS.find((p) => p.id === 'stacked')!.regions.map((r) => r.name)).toEqual(['LED Top', 'LED Bottom'])
   })
 })
+
+/* ───────── transitions (LiveCanvas) ───────── */
+import { transitionAnimation } from '@shared/render/LiveCanvas'
+describe('transitions', () => {
+  it('maps every Transition type to in/out animations', () => {
+    expect(transitionAnimation({ type: 'cut', duration: 1 }, 'in')).toBeUndefined()
+    expect(transitionAnimation(undefined, 'in')).toBeUndefined()
+    expect(transitionAnimation({ type: 'dissolve', duration: 0.5 }, 'in')).toContain('rp-in-fade 0.5s')
+    // fade goes through black: the new picture waits for the old one to fade out
+    expect(transitionAnimation({ type: 'fade', duration: 1 }, 'in')).toContain('0.5s ease-out 0.5s')
+    expect(transitionAnimation({ type: 'push', duration: 1, direction: 'up' }, 'out')).toContain('rp-out-up')
+    expect(transitionAnimation({ type: 'slide', duration: 1, direction: 'right' }, 'in')).toContain('rp-in-right')
+    expect(transitionAnimation({ type: 'slide', duration: 1 }, 'out')).toContain('rp-hold')
+    expect(transitionAnimation({ type: 'zoom', duration: 0.4 }, 'in')).toContain('rp-in-zoom')
+  })
+})
