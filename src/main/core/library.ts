@@ -354,6 +354,11 @@ class Library {
     await this.saveMedia()
     return added
   }
+  /** Replace the whole media bin (used for batched metadata updates). */
+  async replaceMedia(list: MediaItem[]): Promise<void> {
+    this.media = list
+    await this.saveMedia()
+  }
   async updateMedia(item: MediaItem): Promise<MediaItem> {
     const i = this.media.findIndex((m) => m.id === item.id)
     if (i >= 0) this.media[i] = item
