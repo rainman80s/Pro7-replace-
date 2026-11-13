@@ -1,5 +1,5 @@
 import { createContext, memo, useContext, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import type { Fill, MediaRef, Size, SlideElement, TextElement, TextStyle, Shadow } from '../model'
+import type { Fill, MediaRef, Size, SlideElement, TextElement, TextStyle, Shadow, Paragraph } from '../model'
 import { mediaUrl } from '../media'
 
 /** Values for dynamic text tokens, e.g. { clock: '10:42', 'current.text': '...', 'timer:abc': '4:59' }. */
@@ -113,6 +113,22 @@ export function textBoxStyles(el: TextElement, k = 1): { outer: CSSProperties; i
   }
 }
 
+/**
+ * ProPresenter "text transform" (kept by the importer in `ext.transform`): e.g. the LED lyric strip shows
+ * a whole lyric slide on ONE line. Applied at render time so the underlying lyrics stay multi-line.
+ */
+export function transformParagraphs(paragraphs: Paragraph[], transform?: unknown, delimiter?: unknown): Paragraph[] {
+  if (transform === 'single_line' || transform === 'replace_line_returns') {
+    const sep = typeof delimiter === 'string' && delimiter ? delimiter : ' '
+    const runs = paragraphs.flatMap((p, i) => (i && p.runs.length ? [{ text: sep, style: p.runs[0].style }, ...p.runs] : p.runs))
+    return [{ runs, align: paragraphs[0]?.align }]
+  }
+  if (transform === 'one_word_per_line') {
+    return paragraphs.flatMap((p) => p.runs.flatMap((r) => r.text.split(/\s+/).filter(Boolean).map((w) => ({ runs: [{ text: w, style: r.style }], align: p.align }))))
+  }
+  return paragraphs
+}
+
 function TextBox({ el, tokens }: { el: TextElement; tokens?: Tokens }): ReactNode {
   const outer = useRef<HTMLDivElement>(null)
   const inner = useRef<HTMLDivElement>(null)
@@ -130,7 +146,7 @@ function TextBox({ el, tokens }: { el: TextElement; tokens?: Tokens }): ReactNod
     <div ref={outer} style={st.outer}>
       {el.fill?.type === 'media' && <MediaFill media={el.fill.media} fit={el.fill.fit} />}
       <div ref={inner} style={st.inner}>
-        {el.paragraphs.map((p, i) => (
+        {transformParagraphs(el.paragraphs, (el as { ext?: Record<string, unknown> }).ext?.transform, (el as { ext?: Record<string, unknown> }).ext?.transformDelimiter).map((p, i) => (
           <div key={i} style={{ textAlign: p.align, minHeight: '1em' }}>
             {p.runs.map((r, j) => (
               <span key={j} style={textStyleCss(r.style)}>{el.dynamic ? applyTokens(r.text, tokens) : r.text}</span>
