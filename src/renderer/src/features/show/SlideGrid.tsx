@@ -121,7 +121,7 @@ export function SlideGrid({ playlist }: { playlist: Playlist | undefined }): Rea
                 locked ? null : { label: 'Edit slides', icon: 'edit', onSelect: () => openPresentation(presentation.id, 'edit') }
               ])}>
               <span className="slide-frame">
-                <SlideThumb elements={s.elements} background={s.background} size={presentation.size} />
+                <SlideThumb checker elements={s.elements} background={s.background} size={presentation.size} />
                 {isLive && <Badge tone="live" className="slide-flag">Live</Badge>}
                 {isNext && <Badge tone="outline" className="slide-flag">Next</Badge>}
               </span>

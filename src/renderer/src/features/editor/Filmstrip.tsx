@@ -82,5 +82,5 @@ function FilmThumb({ doc, slide, canvas, stage }: { doc: Presentation; slide: Sl
     const r = resolveSlideForCanvas(slide, doc.size, canvas)
     return <div className="ed-film-thumb tall"><SlideThumb elements={r.elements} background={r.background} size={r.size}>{canvas.regions.map((g) => <RegionGuide key={g.id} region={g} />)}</SlideThumb></div>
   }
-  return <div className="ed-film-thumb"><SlideThumb elements={slide.elements} background={slide.background} size={doc.size} tokens={stage ? sampleTokens() : undefined} /></div>
+  return <div className="ed-film-thumb"><SlideThumb checker elements={slide.elements} background={slide.background} size={doc.size} tokens={stage ? sampleTokens() : undefined} /></div>
 }

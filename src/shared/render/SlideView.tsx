@@ -243,14 +243,21 @@ export interface SlideViewProps {
   build?: number
   /** Draw the background (false for live outputs where the slide floats over a media layer). */
   opaque?: boolean
+  /** Operator previews only: draw a grey checkerboard where there is no background. */
+  checker?: boolean
   style?: CSSProperties
   children?: ReactNode
 }
 
 /** Draws a slide at its design size (unscaled). Wrap in <Fit> to scale it into a container. */
-export function SlideView({ elements, background, size, tokens, build, opaque, style, children }: SlideViewProps): ReactNode {
+export function checkerStyle(size: Size): CSSProperties {
+  const c = Math.max(8, Math.round(size.width / 48))
+  return { backgroundColor: '#8a8a8a', backgroundImage: 'conic-gradient(#b4b4b4 25%, transparent 0 50%, #b4b4b4 0 75%, transparent 0)', backgroundSize: `${c * 2}px ${c * 2}px` }
+}
+
+export function SlideView({ elements, background, size, tokens, build, opaque, checker, style, children }: SlideViewProps): ReactNode {
   return (
-    <div data-slide-view style={{ position: 'relative', width: size.width, height: size.height, overflow: 'hidden', background: opaque ? '#000' : undefined, ...style }}>
+    <div data-slide-view style={{ position: 'relative', width: size.width, height: size.height, overflow: 'hidden', background: opaque ? '#000' : undefined, ...(checker && !background ? checkerStyle(size) : null), ...style }}>
       {background && (
         <div style={{ position: 'absolute', inset: 0, ...fillStyle(background) }}>
           {background.type === 'media' && <MediaFill media={background.media} fit={background.fit} />}
@@ -301,12 +308,12 @@ export function StillMedia({ children }: { children: ReactNode }): ReactNode {
 }
 
 /** A self-scaling slide thumbnail that keeps the slide's aspect ratio. */
-export function SlideThumb({ elements, background, size, tokens, style, className, children }: SlideViewProps & { className?: string }): ReactNode {
+export function SlideThumb({ elements, background, size, tokens, checker, style, className, children }: SlideViewProps & { className?: string }): ReactNode {
   return (
     <div className={className} style={{ aspectRatio: `${size.width} / ${size.height}`, width: '100%', background: '#000', ...style }}>
       <Fit size={size}>
         <RenderContext.Provider value={STILL}>
-          <SlideView elements={elements} background={background} size={size} tokens={tokens} opaque>{children}</SlideView>
+          <SlideView elements={elements} background={background} size={size} tokens={tokens} opaque checker={checker}>{children}</SlideView>
         </RenderContext.Provider>
       </Fit>
     </div>
