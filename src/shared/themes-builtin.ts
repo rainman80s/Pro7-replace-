@@ -60,6 +60,19 @@ export const BUILTIN_THEMES: Theme[] = [
     ]
   },
   {
+    // Assigned as `canvas.themeId` on the "Livestream (16:9)" screen: every lyrics slide, whatever the LED-wall
+    // layout it was designed for, gets a 16:9 lower third (text + soft plate, no background) without editing slides.
+    id: 'reach-livestream', name: 'Livestream lower third', size: { width: W, height: H },
+    templates: [
+      tpl('reach-livestream-main', 'Lyrics lower third', {
+        elements: [
+          rect('plate', 'Plate', [160, 790, 1600, 230], 'rgba(0,0,0,.42)', { cornerRadius: 18 } as Partial<SlideElement>),
+          text('l', 'lyrics', 'Lyrics', 'Amazing grace how sweet the sound\nThat saved a wretch like me', [200, 805, 1520, 200], { fontFamily: SANS, fontSize: 66, fontWeight: 600, color: '#FFFFFF', lineHeight: 1.2, shadow: { color: 'rgba(0,0,0,.8)', blur: 14, x: 0, y: 3 } })
+        ]
+      })
+    ]
+  },
+  {
     id: 'reach-scripture', name: 'Reach · Scripture', size: { width: W, height: H },
     templates: [
       tpl('reach-scripture-main', 'Scripture', {

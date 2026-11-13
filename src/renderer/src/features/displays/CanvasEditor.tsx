@@ -37,6 +37,13 @@ export function CanvasEditor(): ReactNode {
     void saveCanvases(canvases.filter((x) => x.id !== c.id))
     select({ selectedCanvasId: null })
   }
+  const addLivestream = (): void => {
+    const preset = CANVAS_PRESETS.find((p) => p.id === 'livestream')!
+    const c = canvasFromPreset(preset, newLocalId(), newLocalId, preset.name, COLORS[canvases.length % COLORS.length])
+    void saveCanvases([...canvases, c])
+    select({ selectedCanvasId: c.id })
+    toast('Livestream screen added', 'success', 'Now send it out: Where things show → NDI, a DeckLink port (fill + key) or the OBS browser source.')
+  }
   const duplicate = (c: Canvas): void => {
     const copy: Canvas = { ...structuredClone(c), id: newLocalId(), name: `${c.name} copy`, regions: c.regions.map((r) => ({ ...r, id: newLocalId() })) }
     void saveCanvases([...canvases, copy])
@@ -44,7 +51,7 @@ export function CanvasEditor(): ReactNode {
   }
   return (
     <div className="dsp-canvas-editor">
-      <Panel title="Screens" className="dsp-canvas-list" actions={<Button size="sm" variant="primary" onClick={() => setAdding(true)}>+ New screen</Button>}>
+      <Panel title="Screens" className="dsp-canvas-list" actions={<><Button size="sm" onClick={addLivestream} data-add-livestream title="1920×1080 lyrics lower third over transparent, for the stream">+ Livestream</Button><Button size="sm" variant="primary" onClick={() => setAdding(true)}>+ New screen</Button></>}>
         <div className="col" style={{ padding: 8, gap: 4 }}>
           {canvases.map((c) => (
             <button key={c.id} className={`dsp-canvas-item ${c.id === canvas?.id ? 'on' : ''}`} onClick={() => select({ selectedCanvasId: c.id })} data-canvas={c.id}>

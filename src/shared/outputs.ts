@@ -604,7 +604,12 @@ export interface CanvasPreset {
   height: number
   regions: { name: string; rect: Rect }[]
   layers?: Canvas['layers']
+  /** Default theme for slides with no layout of their own on this screen (built-in theme id). */
+  themeId?: ID
 }
+
+/** Built-in theme (themes-builtin.ts) that gives every slide a 16:9 lower third on the Livestream screen. */
+export const LIVESTREAM_THEME_ID = 'reach-livestream'
 
 export const CANVAS_PRESETS: CanvasPreset[] = [
   { id: 'hd', name: 'Full HD (1080p)', description: 'One normal TV or projector', kind: 'audience', width: 1920, height: 1080, regions: [] },
@@ -624,6 +629,10 @@ export const CANVAS_PRESETS: CanvasPreset[] = [
     regions: [{ name: 'Left', rect: { x: 0, y: 0, w: 1920, h: 1080 } }, { name: 'Centre', rect: { x: 1920, y: 0, w: 1920, h: 1080 } }, { name: 'Right', rect: { x: 3840, y: 0, w: 1920, h: 1080 } }]
   },
   { id: 'lower-third', name: 'Stream overlay', description: 'Lyrics only, no background — for the live stream', kind: 'audience', width: 1920, height: 1080, regions: [], layers: { background: false, video: false } },
+  {
+    id: 'livestream', name: 'Livestream (16:9)', description: 'Lyrics as a lower third over transparent / your camera, no background — NDI, SDI key or OBS', kind: 'audience', width: 1920, height: 1080, regions: [],
+    layers: { background: false, video: false, announcement: false }, themeId: LIVESTREAM_THEME_ID
+  },
   { id: 'lobby', name: 'Lobby TVs', description: 'Announcements only', kind: 'audience', width: 1920, height: 1080, regions: [], layers: { slide: false, video: false, message: false, props: false } },
   { id: 'stage', name: 'Stage display', description: 'Confidence monitor for the people on stage', kind: 'stage', width: 1920, height: 1080, regions: [] }
 ]
@@ -646,7 +655,8 @@ export function canvasFromPreset(p: CanvasPreset, id: ID, mintRegionId: () => ID
   return {
     id, name: name ?? p.name, kind: p.kind, width: p.width, height: p.height, color,
     regions: p.regions.map((r): Region => ({ id: mintRegionId(), name: r.name, rect: { ...r.rect } })),
-    ...(p.layers ? { layers: { ...p.layers } } : {})
+    ...(p.layers ? { layers: { ...p.layers } } : {}),
+    ...(p.themeId ? { themeId: p.themeId } : {})
   }
 }
 
