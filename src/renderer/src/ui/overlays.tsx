@@ -20,7 +20,8 @@ function useFocusTrap(ref: React.RefObject<HTMLElement | null>): void {
     const el = ref.current
     if (!el) return
     const previous = document.activeElement as HTMLElement | null
-    const auto = el.querySelector<HTMLElement>('[autofocus], [data-autofocus]') ?? el.querySelector<HTMLElement>('.modal-body input, .modal-body textarea, .drawer-body input') ?? el.querySelector<HTMLElement>(FOCUSABLE)
+    // Focus the obvious first field; otherwise the dialog itself (not the close button, which would show a stray focus ring).
+    const auto = el.querySelector<HTMLElement>('[autofocus], [data-autofocus]') ?? el.querySelector<HTMLElement>('.modal-body input, .modal-body textarea, .drawer-body input')
     ;(auto ?? el).focus({ preventScroll: true })
     const onKey = (e: KeyboardEvent): void => {
       if (e.key !== 'Tab') return

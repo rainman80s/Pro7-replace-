@@ -3,6 +3,7 @@
 /* Brand side: the only Paper surface in the app — Charcoal logo on Paper, as the guide prefers. */
 .wel-brand { background: var(--paper); color: var(--charcoal); padding: 40px 30px 28px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
 .wel-hello { font: 400 24px/1.2 var(--font-display); text-align: center; margin-top: 10px; }
+.wel-sub { color: #6b6962; text-align: center; max-width: 220px; line-height: 1.5; }
 .wel-steps { margin-top: auto; width: 100%; display: flex; flex-direction: column; gap: 2px; }
 .wel-step { all: unset; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 6px; font-size: 12.5px; color: #6b6962; }
 .wel-step > span { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font: 11px var(--font-mono); box-shadow: inset 0 0 0 1px #c9c6bc; }

@@ -88,7 +88,8 @@ function WelcomeDialog(): ReactNode {
       <div className="wel" role="dialog" aria-modal="true" aria-labelledby="wel-title">
         <aside className="wel-brand">
           <Logo variant="combo" height={108} />
-          <div className="wel-hello">Welcome to Reach Presenter</div>
+          <div className="wel-hello">Let’s get you set up</div>
+          <div className="wel-sub t-meta">Four quick steps. You can skip any of them and come back from Settings.</div>
           <div className="wel-steps" aria-hidden>
             {steps.map((s, j) => <button key={s.id} type="button" tabIndex={-1} className={`wel-step ${j === i ? 'on' : ''} ${j < i ? 'done' : ''}`} onClick={() => setI(j)}><span>{j < i ? <Icon name="check" size={12} /> : j + 1}</span>{s.title}</button>)}
           </div>

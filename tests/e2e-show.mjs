@@ -230,10 +230,18 @@ try {
   await win.click(tid('welcome-skip'))
   await win.waitForSelector(tid('welcome'), { state: 'detached' })
 
+  step('about box (logo) from the wordmark')
+  await win.click('.brand')
+  await win.waitForSelector(tid('about'))
+  await snap('about-1440.png')
+  await win.keyboard.press('Escape')
+  await win.waitForSelector(tid('about'), { state: 'detached' })
+
   step('shortcuts overlay')
   await win.click(tid('nav-show'))
   await win.keyboard.press('?')
   await win.waitForSelector(tid('shortcuts'))
+  await snap('shortcuts-1440.png')
   await win.keyboard.press('Escape')
   await win.waitForSelector(tid('shortcuts'), { state: 'detached' })
 
