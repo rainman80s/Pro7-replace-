@@ -1,5 +1,7 @@
 /* ───────────── Show screen layout ───────────── */
 .show { display: grid; grid-template-columns: minmax(240px, 290px) minmax(0, 1fr) minmax(300px, 360px); gap: 10px; height: 100%; padding: 10px; }
+.show.has-bin { grid-template-columns: minmax(240px, 290px) minmax(0, 1fr) var(--bin-w, 260px) minmax(300px, 360px); }
+.show.bin-shut { grid-template-columns: minmax(240px, 290px) minmax(0, 1fr) 30px minmax(300px, 360px); }
 .show-side { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
 
 /* ───────────── Service panel ───────────── */
@@ -154,6 +156,8 @@
 
 /* ───────────── narrower windows ───────────── */
 @media (max-width: 1240px) {
+  .show.has-bin { grid-template-columns: minmax(220px, 250px) minmax(0, 1fr) min(var(--bin-w, 260px), 220px) minmax(270px, 300px); }
+  .show.bin-shut { grid-template-columns: minmax(220px, 250px) minmax(0, 1fr) 30px minmax(270px, 300px); }
   .show { grid-template-columns: minmax(220px, 250px) minmax(0, 1fr) minmax(270px, 300px); gap: 8px; padding: 8px; }
   .grid-title { font-size: 24px; }
   .slides { padding: 12px 14px 20px; gap: 12px; }
@@ -165,3 +169,37 @@
   .clear-btn { min-height: 58px; gap: 3px; }
   .upnext { min-height: 0; padding: 8px 10px; }
 }
+
+/* ───────────── Media bin (docked) ───────────── */
+.bin { position: relative; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.bin-resize { position: absolute; left: -7px; top: 0; bottom: 0; width: 10px; cursor: col-resize; z-index: 2; }
+.bin-resize:hover, .bin-resize:active { background: linear-gradient(90deg, transparent 3px, var(--accent) 3px 5px, transparent 5px); }
+.bin-head { display: flex; align-items: center; padding: 12px 8px 8px 12px; }
+.bin-x { all: unset; cursor: pointer; display: grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-sm); color: var(--text-faint); }
+.bin-x:hover { background: var(--bg-hover); color: var(--text); }
+.bin-tools { display: flex; flex-direction: column; gap: 6px; padding: 0 10px 8px; }
+.bin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; padding: 2px 10px 10px; align-content: start; }
+.bin-item { display: flex; flex-direction: column; gap: 4px; padding: 3px; border-radius: 7px; border: 2px solid transparent; background: var(--bg-sunken); cursor: grab; }
+.bin-item:hover { border-color: var(--border-strong); }
+.bin-item.live { border-color: var(--live); }
+.bin-item .media-thumb { aspect-ratio: 16 / 9; border-radius: 4px; }
+.bin-name { font-size: 11.5px; color: var(--text-dim); padding: 0 2px 1px; }
+.bin-none { grid-column: 1 / -1; padding: 16px 4px; color: var(--text-faint); font: 12px var(--font-mono); }
+.bin-foot { padding: 8px 12px; border-top: 1px solid var(--border-soft); color: var(--text-faint); font-size: 11px; }
+.bin-rail { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 12px 0; border: 1px solid var(--border-soft); border-radius: var(--radius); background: var(--bg-raised); color: var(--text-dim); }
+.bin-rail:hover { background: var(--bg-hover); color: var(--text); }
+.bin-rail:focus-visible { outline: 2px solid var(--focus); }
+.bin-rail span { writing-mode: vertical-rl; font: 500 10.5px/1 var(--font-label); letter-spacing: .16em; text-transform: uppercase; }
+
+/* Drop targets (media / macros dragged onto slides, section names and the title) */
+.drop { transition: outline-color .1s var(--ease), background .1s var(--ease); }
+.slide.over { outline: 3px solid var(--accent); outline-offset: 2px; transform: scale(1.02); }
+.slide-group-head { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; margin-top: 4px; padding: 5px 8px; border-radius: var(--radius-sm); font: 500 10.5px/1.2 var(--font-label); letter-spacing: .16em; text-transform: uppercase; color: var(--text-dim); border-bottom: 1px solid var(--border-soft); }
+.slide-group-head:first-child { margin-top: 0; }
+.slide-group-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--group); flex: none; }
+.slide-group-head.over, .grid-title.over { outline: 2px solid var(--accent); outline-offset: 2px; background: var(--accent-soft); color: var(--text); }
+.grid-title.drop { border-radius: var(--radius-sm); }
+.slide-note { color: var(--accent-text); display: inline-grid; }
+.slide-acts { display: inline-flex; align-items: center; gap: 3px; }
+.slide-act-dot { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 1.5px var(--bg-raised); }
+.slide-act-more { font: 10px var(--font-mono); color: var(--text-faint); }

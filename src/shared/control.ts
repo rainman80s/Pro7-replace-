@@ -594,3 +594,6 @@ declare module './api' {
     'control.ran': { source: string; label: string; at: number }
   }
 }
+
+/** Drag payload type for dragging a macro (JSON {id,name}) onto slides in the Show grid. */
+export const MACRO_MIME = 'application/x-reach-macro'
