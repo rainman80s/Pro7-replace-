@@ -47,3 +47,6 @@
 .ctl-bigurl .ctl-mono { font-size: 16px; }
 .ctl-pin { font-size: 14px; color: var(--text-dim); }
 .ctl-pin b { font: 600 28px var(--font-mono); letter-spacing: .2em; color: var(--text); margin-left: 8px; }
+.ctl-macro { background: var(--c, var(--lakeside)); }
+.ctl-msg-name { flex: 1; background: none; border: 0; color: var(--text); text-align: left; cursor: pointer; font: 600 13px var(--font-ui); padding: 0; }
+.ctl-msg.on .ctl-msg-name { color: var(--mustard); }

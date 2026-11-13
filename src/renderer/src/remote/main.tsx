@@ -48,6 +48,7 @@ function Remote(): ReactNode {
   const [connected, setConnected] = useState(true)
   const [auth, setAuth] = useState<'checking' | 'ok' | 'bad'>('checking')
   const [lists, setLists] = useState<Playlist[]>([])
+  const [titles, setTitles] = useState<Record<string, string>>({})
   const [stage, setStage] = useState('')
   const [now, setNow] = useState(Date.now())
   const timers = useDoc<TimersDoc>('timers.list', 'timers')
@@ -61,7 +62,8 @@ function Remote(): ReactNode {
       setAuth('ok')
       void api.invoke('live.get').then(setLive)
       void api.invoke('playlists.list').then(setLists)
-    }).catch(() => setAuth('bad'))
+      void api.invoke('library.list').then((l) => setTitles(Object.fromEntries(l.map((p) => [p.id, p.title])))).catch(() => {})
+    }).catch((e: Error) => { if (/authorized|PIN/i.test(e.message)) setAuth('bad') })
   }, [connected])
   useEffect(() => {
     const offs = [api.on('live.changed', setLive), api.on('playlists.changed', () => void api.invoke('playlists.list').then(setLists))]
@@ -107,7 +109,7 @@ function Remote(): ReactNode {
           <div className="rm-items">
             {items.map((it) => it.type === 'presentation'
               ? <button key={it.id} className={`rm-btn sm rm-item ${live.slide?.playlistItemId === it.id ? 'cur' : ''}`}
-                  onClick={() => call('live.goToSlide', { presentationId: it.presentationId, index: 0, playlistId: list!.id, playlistItemId: it.id, arrangementId: it.arrangementId })}>{it.title || 'Untitled'}</button>
+                  onClick={() => call('live.goToSlide', { presentationId: it.presentationId, index: 0, playlistId: list!.id, playlistItemId: it.id, arrangementId: it.arrangementId })}>{it.title || titles[it.presentationId] || 'Untitled'}</button>
               : <div key={it.id} className="rm-label" style={{ marginTop: 6 }}>{it.title}</div>)}
           </div>
         </div>
