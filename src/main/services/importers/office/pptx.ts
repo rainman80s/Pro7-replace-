@@ -12,7 +12,7 @@ import { readZip } from '../util/zip'
 
 const EMU = 914400 / 96 // EMU per CSS px
 type El = Element
-const parse = (b: Uint8Array): Document => new DOMParser({ errorHandler: { warning: () => {}, error: () => {}, fatalError: () => {} } }).parseFromString(Buffer.from(b).toString('utf8'), 'text/xml') as unknown as Document
+const parse = (b: Uint8Array): Document => { const t = Buffer.from(b).toString('utf8').trim(); return (new DOMParser({ errorHandler: { warning: () => {}, error: () => {}, fatalError: () => {} } }).parseFromString(t || '<x/>', 'text/xml') ?? new DOMParser().parseFromString('<x/>', 'text/xml')) as unknown as Document }
 const all = (e: El | Document, local: string): El[] => Array.from((e as El).getElementsByTagName('*')).filter((x) => (x.localName ?? x.nodeName.split(':').pop()) === local) as El[]
 const first = (e: El | Document, local: string): El | undefined => all(e, local)[0]
 const kidsNamed = (e: El, local: string): El[] => Array.from(e.childNodes).filter((n) => n.nodeType === 1 && ((n as El).localName ?? n.nodeName.split(':').pop()) === local) as El[]
