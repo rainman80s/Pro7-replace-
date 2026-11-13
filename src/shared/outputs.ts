@@ -572,7 +572,7 @@ export class ClockSync {
 
 /** Where a synced media element should be right now, in seconds. */
 export function mediaPosition(m: { playing: boolean; startedAt?: number; offset?: number; loop?: boolean }, now: number, duration?: number): number {
-  const t = (m.offset ?? 0) + (m.playing && m.startedAt ? Math.max(0, now - m.startedAt) / 1000 : 0)
+  const t = (m.offset ?? 0) + (m.playing && m.startedAt != null ? Math.max(0, now - m.startedAt) / 1000 : 0)
   if (!duration || !isFinite(duration) || duration <= 0) return t
   return m.loop ? t % duration : Math.min(t, duration)
 }
