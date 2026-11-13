@@ -4,7 +4,10 @@
  * Also used by scripts/make-pp7-fixtures.ts to write a fake ProPresenter folder for the e2e test.
  */
 import { crc32 } from 'node:zlib'
+import * as fs from 'node:fs'
+import * as path from 'node:path'
 import { encodePP7 } from '../../src/main/services/importers/pp7/proto'
+import { readZip } from '../../src/main/services/importers/util/zip'
 
 const U = (s: string): { string: string } => ({ string: s })
 const rgba = (r: number, g: number, b: number, a = 1) => ({ red: r, green: g, blue: b, alpha: a })
@@ -136,7 +139,7 @@ export function zip64WithPPBug(files: { name: string; data: Uint8Array }[]): Uin
   z64.writeBigUInt64LE(BigInt(cdOffset), 48)
   const z64Offset = cdOffset + cdBuf.length
   const loc = Buffer.alloc(20)
-  loc.writeUInt32LE(0x07064b50, 0); loc.writeBigUInt64LE(BigInt(z64Offset - 98), 8); loc.writeUInt32LE(1, 16) // locator also off by 98
+  loc.writeUInt32LE(0x07064b50, 0); loc.writeBigUInt64LE(BigInt(Math.max(0, z64Offset - 98)), 8); loc.writeUInt32LE(1, 16) // locator also off by 98
   const eocd = Buffer.alloc(22)
   eocd.writeUInt32LE(0x06054b50, 0); eocd.writeUInt16LE(0xffff, 8); eocd.writeUInt16LE(0xffff, 10)
   eocd.writeUInt32LE(0xffffffff, 12); eocd.writeUInt32LE(0xffffffff, 16)
@@ -145,3 +148,27 @@ export function zip64WithPPBug(files: { name: string; data: Uint8Array }[]): Uin
 
 /** A tiny valid PNG (1×1). */
 export const PNG_1PX = Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c6360f8cfc0000003010100c9fe92ef0000000049454e44ae426082', 'hex')
+
+/**
+ * A fake ProPresenter folder: real vendored samples + the synthetic song in Libraries/, its media under Media/,
+ * a Playlists/Library document, Configuration/* and a theme from the vendored corpus, and a ZIP64-bug bundle.
+ */
+export function buildFakeProPresenterFolder(dir: string, samplesDir: string): void {
+  const mk = (p: string): void => fs.mkdirSync(path.join(dir, p), { recursive: true })
+  const cp = (from: string, to: string): void => { mk(path.dirname(to)); fs.copyFileSync(path.join(samplesDir, from), path.join(dir, to)) }
+  mk('Libraries/Default'); mk('Libraries/Hymns'); mk('Playlists'); mk('Media/Backgrounds'); mk('Media/Images'); mk('Configuration'); mk('Themes')
+  fs.writeFileSync(path.join(dir, 'Libraries/Default/Synthetic Song.pro'), syntheticPresentation())
+  for (const f of ['bussnet_test-translated.pro', 'bussnet_test-with-macro.pro', 'chrismbarr_v7-feature-test.pro', 'bes-migrator_windows-template-1.pro']) cp(f, `Libraries/Default/${f}`)
+  for (const f of fs.readdirSync(path.join(samplesDir, 'library/Libraries/Hymns'))) cp(`library/Libraries/Hymns/${f}`, `Libraries/Hymns/${f}`)
+  fs.writeFileSync(path.join(dir, 'Media/Backgrounds/waves.mp4'), Buffer.from('not really a video'))
+  fs.writeFileSync(path.join(dir, 'Media/Images/cross.jpg'), PNG_1PX)
+  // avatar.png referenced by an absolute Windows path in the feature test: found by file name under Media/
+  fs.writeFileSync(path.join(dir, 'Media/Images/avatar.png'), Buffer.concat([PNG_1PX, Buffer.from('avatar')]))
+  fs.writeFileSync(path.join(dir, 'Playlists/Library'), syntheticPlaylistDoc('Synthetic Song.pro'))
+  for (const f of fs.readdirSync(path.join(samplesDir, 'library/Configuration'))) cp(`library/Configuration/${f}`, `Configuration/${f}`)
+  for (const f of ['Theme', 'Assets/BACKGROUND.jpg', 'Assets/KEY_VISUAL.jpg', 'Assets/BAUCHBIND_STREAM.jpg']) cp(`library/Themes/sample/${f}`, `Themes/Sample/${f}`)
+  fs.writeFileSync(path.join(dir, 'Bundle Export.probundle'), zip64WithPPBug([
+    { name: 'Bundled.pro', data: readZip(fs.readFileSync(path.join(samplesDir, 'exports/TestBild.probundle'))).entries.find((e) => e.name.endsWith('.pro'))!.read() },
+    { name: 'test-background.png', data: PNG_1PX }
+  ]))
+}

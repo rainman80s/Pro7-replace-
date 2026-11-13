@@ -29,8 +29,6 @@ export function decodePP7(typeName: string, bytes: Uint8Array): PB {
 
 export function encodePP7(typeName: string, obj: PB): Uint8Array {
   const T = pp7Type(typeName)
-  const err = T.verify(obj)
-  if (err) throw new Error(`${typeName}: ${err}`)
   return T.encode(T.fromObject(obj)).finish()
 }
 
