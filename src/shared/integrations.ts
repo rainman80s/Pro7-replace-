@@ -185,6 +185,10 @@ export interface NotionMapping {
   /** Optional multi-select/select filter: property must contain this option. */
   filterProp?: string
   filterValue?: string
+  /** Only pages whose title contains this ("Sunday Highlights" pages in a general comms database). */
+  titleContains?: string
+  /** Skip pages in these statuses ("Scrapped/Missed"). */
+  excludeStatus?: string[]
 }
 
 export interface NotionSettings {
