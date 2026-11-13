@@ -244,7 +244,7 @@ export default defineService({
       const ts = await bible.translations()
       const off = ts.filter((t) => t.offline)
       return {
-        id: 'bible', connected: ts.length > 0, account: ts.length ? ts.map((t) => t.abbreviation).join(', ') : undefined,
+        id: 'bible' as const, connected: ts.length > 0, account: ts.length ? ts.map((t) => t.abbreviation).join(', ') : undefined,
         detail: off.length ? `${off.length} offline translation${off.length > 1 ? 's' : ''}` : 'No offline Bible downloaded yet',
         providers: providerStatus(), settings: await bible.settings()
       }
