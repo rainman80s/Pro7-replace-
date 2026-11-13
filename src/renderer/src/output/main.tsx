@@ -127,6 +127,9 @@ function Output(): ReactNode {
       }).then((r) => setName(r.name)).catch(() => {})
     }
     load()
+    // The socket may already be open before we subscribe to onConnection: say hello right away too.
+    hello()
+    if (api.transport === 'ws') void probeClock(5)
     const offs = [
       api.on('live.changed', (l) => { liveRev.current = l.rev; setLive(l) }),
       api.on('outputs.changed', load),

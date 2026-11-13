@@ -82,7 +82,7 @@ declare module './api' {
   interface ApiMethods {
     /** Per-output status in plain words, for the Displays view and the app status strip. */
     'outputs.health': { req: void; res: OutputHealth[] }
-    /** Emergency: hide every output window on this computer (toggle). */
+    /** Emergency: hide every output on this computer. Without `on` it just reports the current state. */
     'outputs.safeMode': { req: { on?: boolean } | void; res: { on: boolean; shortcut: string } }
     'outputs.testPattern': { req: { id?: ID; pattern: TestPatternId | null }; res: Output[] }
     /** One-click "Also show on…": a new output with the same source on another destination. */

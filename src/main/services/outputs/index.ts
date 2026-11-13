@@ -156,7 +156,8 @@ function registerApi(): void {
     setTimeout(() => api.emit('outputs.identifyOne', { id, on: false }), ms ?? 3000)
   })
   api.handle('outputs.health', () => health(), 'control')
-  api.handle('outputs.safeMode', (req) => setSafeMode(req && typeof req.on === 'boolean' ? req.on : !safeMode), 'control')
+  // With `on` it sets safe mode; without, it only reports it (the keyboard shortcut is the toggle).
+  api.handle('outputs.safeMode', (req) => setSafeMode(req && typeof req.on === 'boolean' ? req.on : safeMode), 'control')
   api.handle('outputs.testPattern', ({ id, pattern }) => {
     const list = getOutputs()
     const group = list.find((o) => o.id === id && isGroup(o))
