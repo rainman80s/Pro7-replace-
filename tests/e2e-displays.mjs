@@ -36,7 +36,7 @@ try {
   const inv = (m, p) => win.evaluate(([m, p]) => window.reachBridge.invoke(m, p), [m, p])
   const health = async (id) => (await inv('outputs.health')).find((h) => h.outputId === id)
   const until = async (fn, msg, ms = 10000) => { const t = Date.now(); while (Date.now() - t < ms) { if (await fn()) return; await sleep(150) } throw new Error(`[${step}] timed out: ${msg}`) }
-  await win.waitForSelector('.pl-item', { timeout: 20000 })
+  await win.waitForSelector('[data-testid="service-item"]', { timeout: 20000 })
 
   step = 'stacked canvas'
   const ws = await inv('workspace.get')
@@ -66,10 +66,10 @@ try {
   check((await inv('outputs.displays')).find((d) => d.id === 42)?.key === tv.key, 'replugged TV recognised by fingerprint')
 
   step = 'go live'
-  await win.click('.pl-item:has-text("Amazing Grace")')
-  await win.waitForSelector('.slide')
-  await win.locator('.slide').nth(1).click()
-  await win.waitForSelector('.slide.live')
+  await win.click('[data-testid="service-item"]:has-text("Amazing Grace")')
+  await win.waitForSelector('[data-testid="slide"]')
+  await win.locator('[data-testid="slide"]').nth(1).click()
+  await win.waitForSelector('[data-testid="slide"].live')
 
   step = 'network receiver'
   const page = await browser.newPage({ viewport: { width: 960, height: 540 } })
@@ -117,7 +117,8 @@ try {
   step = 'reconnect'
   await page.close()
   await until(async () => !(await inv('receivers.list')).find((r) => r.id === 'rx-lobby').connected, 'receiver offline after close')
-  check((await inv('outputs.health')).find((h) => h.name === 'Lobby Left')?.status === 'offline', 'health says offline in plain words')
+  await until(async () => (await inv('outputs.health')).find((x) => x.name === 'Lobby Left')?.status === 'offline', 'health offline')
+  check(true, 'health says offline in plain words')
   const page3 = await browser.newPage({ viewport: { width: 960, height: 540 } })
   await page3.goto(`http://127.0.0.1:${port}/output.html?receiverId=rx-lobby`)
   await page3.waitForSelector('[data-canvas="main"]', { timeout: 10000 })

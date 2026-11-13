@@ -25,11 +25,11 @@ try {
   const errors = []
   win.on('pageerror', (e) => errors.push(String(e)))
   const rpc = (m, p) => win.evaluate(([m, p]) => window.reachBridge.invoke(m, p), [m, p])
-  await win.waitForSelector('.pl-item', { timeout: 20000 })
-  await win.click('.pl-item:has-text("Amazing Grace")')
-  await win.waitForSelector('.slide')
-  await win.locator('.slide').first().click()
-  await win.waitForSelector('.slide.live')
+  await win.waitForSelector('[data-testid="service-item"]', { timeout: 20000 })
+  await win.click('[data-testid="service-item"]:has-text("Amazing Grace")')
+  await win.waitForSelector('[data-testid="slide"]')
+  await win.locator('[data-testid="slide"]').first().click()
+  await win.waitForSelector('[data-testid="slide"].live')
 
   // Timer: create, start, appears running in live.get and in the panel.
   const timer = await rpc('timers.save', { timer: { name: 'Sermon', kind: 'countdown', duration: 1800, warnAt: 300 } })

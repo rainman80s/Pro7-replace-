@@ -31,7 +31,7 @@ try {
   const snap = async (name) => { if (shot) await win.screenshot({ path: join(shot, `editor-${name}.png`) }) }
   const text = (s) => s.elements.filter((e) => e.type === 'text').map((e) => e.paragraphs.map((p) => p.runs.map((r) => r.text).join('')).join('\n')).join('\n')
 
-  await win.waitForSelector('.pl-item', { timeout: 20000 })
+  await win.waitForSelector('[data-testid="service-item"]', { timeout: 20000 })
   const lib = await call('library.list')
   const grace = lib.find((p) => p.title === 'Amazing Grace')
   const get = () => call('library.get', { id: grace.id })
