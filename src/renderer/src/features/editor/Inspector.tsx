@@ -7,6 +7,8 @@ import { ROLE_LABELS } from '@shared/themes'
 import { STAGE_TOKENS } from '@shared/editor-stagelayouts'
 import { Button, Select, TextArea } from '@ui/index'
 import { useApp } from '../../app/store'
+import { ActionPicker } from '../control/ActionPicker'
+import { uid } from '@shared/editor-util'
 import { Color, FillEditor, MediaChip, Num, Row, Section, Seg, TextInput } from './controls'
 import { activeText, currentSurface, patchElements, updateSlide, useDoc, useEditor, surfaceOf, audienceCanvases } from './store'
 import { alignSelection, distribute, fillRegionSel } from './actions'
@@ -310,6 +312,17 @@ function SlideProps(): ReactNode {
               <Row label="Hot key"><TextInput value={slide.hotKey ?? ''} placeholder="e.g. C" onChange={(hotKey) => up((s) => ({ ...s, hotKey: hotKey.slice(0, 1).toUpperCase() || undefined }), 'Hot key')} /></Row>
             </>
           )}
+        </Section>
+      )}
+      {kindDoc === 'presentation' && (
+        <Section title="When this slide goes live">
+          {(slide.actions ?? []).map((a, i) => (
+            <div key={a.id} className="row" style={{ alignItems: 'flex-start', gap: 4 }}>
+              <div className="grow"><ActionPicker compact showDelay value={a} onChange={(n) => up((s) => ({ ...s, actions: (s.actions ?? []).map((x, j) => (j === i ? { ...x, ...n } : x)) }), 'Slide action')} /></div>
+              <Button size="sm" variant="ghost" onClick={() => up((s) => { const actions = (s.actions ?? []).filter((_, j) => j !== i); return { ...s, actions: actions.length ? actions : undefined } }, 'Remove action')}>×</Button>
+            </div>
+          ))}
+          <Button size="sm" onClick={() => up((s) => ({ ...s, actions: [...(s.actions ?? []), { id: uid(), type: 'media.play', params: {} }] }), 'Add action')}>+ Add action</Button>
         </Section>
       )}
       {kindDoc === 'presentation' && (
