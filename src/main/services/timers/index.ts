@@ -13,6 +13,8 @@ import { live } from '../../core/live'
 import { library } from '../../core/library'
 import { workspace } from '../../core/workspace'
 import { DocStore, P, defineAction, pick } from '../macros/lib'
+import { setupMessages } from './messages'
+import { setupProps } from './props'
 
 export const timersDoc = new DocStore<TimersDoc>('timers', defaultTimers, (d) => ({ serviceItemTimer: true, ...d, timers: d.timers ?? [] }))
 
@@ -140,6 +142,8 @@ export default defineService({
       syncLive(doc)
       return def
     })
+    await setupMessages()
+    await setupProps()
     api.handle('timers.remove', async ({ id }) => {
       syncLive(await timersDoc.update((d) => { d.timers = d.timers.filter((t) => t.id !== id) }))
     })
