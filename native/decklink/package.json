@@ -1,0 +1,9 @@
+{
+  "name": "reach-decklink",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Blackmagic DeckLink SDI output for Reach Presenter (optional native addon; build with `npm run build:decklink` from the repo root)",
+  "main": "build/Release/reach_decklink.node",
+  "gypfile": true,
+  "license": "UNLICENSED"
+}
