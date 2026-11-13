@@ -15,7 +15,8 @@
     "dist:mac": "electron-vite build && electron-builder --mac",
     "dist:win": "electron-vite build && electron-builder --win",
     "pp7:descriptor": "node scripts/build-pp7-descriptor.mjs",
-    "pp7:inspect": "tsx scripts/pp7-inspect.ts"
+    "pp7:inspect": "tsx scripts/pp7-inspect.ts",
+    "build:decklink": "node scripts/build-decklink.mjs"
   },
   "license": "UNLICENSED",
   "devDependencies": {
@@ -27,6 +28,8 @@
     "electron": "^45.3.1",
     "electron-builder": "^26.18.0",
     "electron-vite": "^6.0.0",
+    "node-addon-api": "^8.9.2",
+    "node-gyp": "^12.4.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.3.8",
@@ -78,7 +81,16 @@
     ],
     "linux": {
       "icon": "resources/icon-square.png"
-    }
+    },
+    "extraResources": [
+      {
+        "from": "native/decklink/build/Release",
+        "to": "decklink",
+        "filter": [
+          "reach_decklink.node"
+        ]
+      }
+    ]
   },
   "private": true,
   "optionalDependencies": {

@@ -12,6 +12,8 @@ import { planOutputs, type Plan } from './plan'
 import { ReceiverRegistry, type SavedReceiver } from './receivers'
 import { Discovery } from './discovery'
 import { createNdiSink, loadNdi, ndiAvailable } from './ndi'
+import { DeckLinkRegistry, DeckLinkSink, loadDeckLink } from './decklink'
+import type { DeckLinkDevice, DeckLinkStatus } from '@shared/decklink'
 
 /**
  * Outputs service: remembers outputs per machine, matches displays by fingerprint, opens/recovers output
@@ -23,6 +25,7 @@ let displays: DisplayManager
 let windows: OutputWindows
 let registry: ReceiverRegistry
 let discovery: Discovery
+let decklink: DeckLinkRegistry
 let safeMode = false
 let plan: Plan | null = null
 let lastHealth = ''
@@ -53,8 +56,36 @@ function buildPlan(): Plan {
   return planOutputs({
     outputs: getOutputs(), canvases: ctx.workspace.config.canvases, displays: displays.planDisplays(),
     receivers: receiverList().map((r) => ({ id: r.id, name: r.name, connected: r.connected, width: r.width, height: r.height, lastSeen: r.lastSeen })),
-    safeMode, ndiAvailable: ndiAvailable(), ndiReason: loadNdi().reason, runtime: windows.runtime(), safeModeShortcut: SAFE_MODE_LABEL
+    safeMode, ndiAvailable: ndiAvailable(), ndiReason: loadNdi().reason, runtime: windows.runtime(), safeModeShortcut: SAFE_MODE_LABEL,
+    decklink: deckLinkPlanInput()
   })
+}
+
+const hasDeckLinkOutputs = (): boolean => getOutputs().some((o) => o.target.type === 'decklink')
+
+function deckLinkPlanInput(): { available: boolean; reason?: string; devices: DeckLinkDevice[] } {
+  const load = loadDeckLink()
+  const devices = decklink.list()
+  // Until the first scan finishes, remembered ports count as present so outputs don't flash "missing" at startup.
+  const list = decklink.hasScanned() ? devices : devices.map((d) => ({ ...d, connected: true }))
+  return { available: !!load.lib, reason: load.reason ?? (decklink.hasScanned() && !devices.some((d) => d.connected) ? decklink.reason() : undefined), devices: list }
+}
+
+function deckLinkStatus(): DeckLinkStatus {
+  const load = loadDeckLink()
+  const reason = load.reason ?? decklink.reason()
+  return {
+    state: load.state, available: !!load.lib,
+    message: load.lib ? (reason ?? `DeckLink is ready${load.driverVersion ? ` (Desktop Video ${load.driverVersion})` : ''}.`) : (reason ?? 'DeckLink is not available.'),
+    driverVersion: load.driverVersion, apiVersion: load.apiVersion,
+    outputs: getOutputs().flatMap((o) => {
+      if (o.target.type !== 'decklink') return []
+      const sink = windows.sinkOf(o.id)
+      const s = sink instanceof DeckLinkSink ? sink.stats() : null
+      const p = windows.pumpStats(o.id)
+      return [{ outputId: o.id, name: o.name, device: o.target.device, mode: o.target.mode, fps: p?.fps ?? 0, fresh: s?.fresh ?? 0, repeated: s?.repeated ?? 0, late: s?.late ?? 0, dropped: s?.dropped ?? 0, buffered: s?.buffered ?? 0, problem: sink?.problem?.() }]
+    })
+  }
 }
 
 /** Recompute the plan and make windows/health match it. Coalesced so bursts of changes cost one pass. */
@@ -214,6 +245,9 @@ function registerApi(): void {
       })
     }
   }, 'control')
+  api.handle('decklink.status', () => deckLinkStatus(), 'control')
+  api.handle('decklink.devices', async (req) => (req && req.refresh) || !decklink.hasScanned() ? decklink.refresh() : decklink.list(), 'control')
+  api.handle('decklink.forget', ({ key }) => { const l = decklink.forget(key); api.emit('decklink.devicesChanged', l); recompute(); return l }, 'local')
   api.handle('displays.rename', ({ key, name }) => { displays.rename(key, name); return displays.list(getOutputs()) }, 'local')
   api.handle('displays.forget', ({ key }) => { displays.forget(key); return displays.list(getOutputs()) }, 'local')
 
@@ -284,7 +318,9 @@ export default defineService({
   async setup(c) {
     ctx = c
     displays = new DisplayManager(ctx.local, () => ctx.mainWindow())
-    windows = new OutputWindows(ctx, createNdiSink)
+    decklink = new DeckLinkRegistry({ load: () => ctx.local.get<DeckLinkDevice[]>('decklinkDevices', []), save: (l) => ctx.local.set('decklinkDevices', l) })
+    decklink.onChange((l) => { ctx.api.emit('decklink.devicesChanged', l); recompute() })
+    windows = new OutputWindows(ctx, (p) => (p.decklink ? new DeckLinkSink(p.decklink) : createNdiSink()))
     windows.onRuntime = () => emitHealth()
     windows.onUserClosed = (id) => setOutputs(getOutputs().map((o) => (o.id === id ? { ...o, enabled: false } : o)))
     registry = new ReceiverRegistry({ load: () => ctx.local.get<SavedReceiver[]>('receivers', []), save: (l) => ctx.local.set('receivers', l) })
@@ -304,6 +340,9 @@ export default defineService({
     try { globalShortcut.register(SAFE_MODE_SHORTCUT, () => setSafeMode(!safeMode)) } catch { /* taken by another app: in-window key still works */ }
     // Offline receivers age ("last seen 5 min ago"): refresh health once a minute.
     setInterval(() => emitHealth(), 60_000).unref?.()
+    // DeckLink: scan once at startup (only if the addon is built), then watch for unplug/replug while SDI outputs exist.
+    if (loadDeckLink().lib) void decklink.refresh()
+    setInterval(() => { if (hasDeckLinkOutputs() && loadDeckLink().lib) void decklink.refresh() }, 5000).unref?.()
     void discovery.start()
     recompute(true)
   },

@@ -661,6 +661,7 @@ export function destinationLabel(o: Output, displays: DisplayInfo[], receivers: 
   if (t.type === 'network') return receivers.find((r) => r.id === t.receiverId)?.name ?? 'Network display'
   if (t.type === 'ndi') return `NDI “${t.name}”`
   if (t.type === 'window') return 'Window on this computer'
+  if (t.type === 'decklink') return `SDI: ${t.device}`
   return `Group of ${t.outputIds.length}`
 }
 

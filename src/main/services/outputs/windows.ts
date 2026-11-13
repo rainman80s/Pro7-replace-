@@ -14,7 +14,10 @@ import { join } from 'node:path'
 import type { ID } from '@shared/model'
 import type { ServiceContext } from '../../core/service'
 import { FramePump, type FrameSink } from './frames'
+import { FramePacer } from './decklink'
 import { windowSignature, type PlannedWindow } from './plan'
+
+export type CapturePlan = Extract<PlannedWindow, { kind: 'capture' }>
 
 interface Entry {
   win: BrowserWindow
@@ -26,10 +29,11 @@ interface Entry {
   lastCrash: number
   hangTimer?: NodeJS.Timeout
   pump?: FramePump
+  pacer?: FramePacer
   lastPaint?: NativeImage
 }
 
-export interface WindowRuntime { loaded: boolean; crashes: number; recovering: boolean; fps?: number }
+export interface WindowRuntime { loaded: boolean; crashes: number; recovering: boolean; fps?: number; sinkProblem?: string }
 
 export class OutputWindows {
   private entries = new Map<ID, Entry>()
@@ -42,7 +46,7 @@ export class OutputWindows {
   /** Floating window closed by the user. */
   onUserClosed: (id: ID) => void = () => {}
 
-  constructor(private ctx: ServiceContext, private makeSink: () => FrameSink) {
+  constructor(private ctx: ServiceContext, private makeSink: (p: CapturePlan) => FrameSink) {
     const reraise = (): void => { setTimeout(() => this.reraiseAll(), 1500) }
     powerMonitor.on('resume', reraise)
     powerMonitor.on('unlock-screen', reraise)
@@ -50,13 +54,17 @@ export class OutputWindows {
 
   runtime(): Record<ID, WindowRuntime> {
     const out: Record<ID, WindowRuntime> = {}
-    for (const [id, e] of this.entries) out[id] = { loaded: e.loaded, crashes: e.crashes, recovering: e.recovering, fps: e.pump?.stats.fps }
+    for (const [id, e] of this.entries) out[id] = { loaded: e.loaded, crashes: e.crashes, recovering: e.recovering, fps: e.pump?.stats.fps, sinkProblem: e.pump?.sink.problem?.() }
     for (const [id] of this.rebuildTimers) out[id] = { loaded: false, crashes: this.crashCounts.get(id)?.n ?? 1, recovering: true }
     return out
   }
 
   pumpStats(id: ID): FramePump['stats'] | undefined {
     return this.entries.get(id)?.pump?.stats
+  }
+
+  sinkOf(id: ID): FrameSink | undefined {
+    return this.entries.get(id)?.pump?.sink
   }
 
   /** Make the open windows match the plan. Cheap to call often. */
@@ -133,6 +141,7 @@ export class OutputWindows {
     win.on('responsive', () => { if (e.hangTimer) clearTimeout(e.hangTimer); e.recovering = false; this.onRuntime() })
     win.on('closed', () => {
       if (e.hangTimer) clearTimeout(e.hangTimer)
+      e.pacer?.stop()
       void e.pump?.stop()
       if (this.entries.get(p.outputId) === e) {
         this.entries.delete(p.outputId)
@@ -156,11 +165,26 @@ export class OutputWindows {
     if (e.plan.kind !== 'capture') return
     const p = e.plan
     const wc = e.win.webContents
-    wc.setFrameRate(p.fps)
+    wc.setFrameRate(Math.min(240, Math.ceil(p.fps)))
     // NDI receivers expect a steady rate: when the page is static the last frame is re-sent every frame interval (same buffer, no copy).
-    const pump = new FramePump(this.makeSink(), { name: p.name, width: p.size.width, height: p.size.height, fps: p.fps, alpha: p.transparent, keepAliveMs: Math.round(1000 / p.fps) })
+    // DeckLink repeats the last frame on the card itself, so JS only needs a slow keep-alive; frames are paced at the mode's exact rate.
+    const dl = p.decklink
+    const pump = new FramePump(this.makeSink(p), { name: p.name, width: p.size.width, height: p.size.height, fps: p.fps, alpha: p.transparent, keepAliveMs: dl ? 1000 : Math.round(1000 / p.fps) })
     e.pump = pump
-    pump.start().catch((err) => { console.warn('[outputs] frame sink failed', err); pump.stats.lastError = String(err) })
+    pump.start(!dl).then(() => {
+      if (!dl || this.entries.get(p.outputId) !== e) return
+      e.pacer = new FramePacer(dl.rate, () => void pump.tick())
+      e.pacer.start()
+    }).catch((err) => { console.warn('[outputs] frame sink failed', err); pump.stats.lastError = String(err) })
+    // Health follows the sink's own problem line ("device busy…"), which can change without a re-plan.
+    if (dl) {
+      let last: string | undefined
+      const poll = setInterval(() => {
+        if (this.entries.get(p.outputId) !== e) { clearInterval(poll); return }
+        const now = pump.sink.problem?.()
+        if (now !== last) { last = now; this.onRuntime() }
+      }, 1000)
+    }
     wc.on('paint', (_ev, _dirty, image) => {
       e.lastPaint = image
       const s = image.getSize()
@@ -213,6 +237,7 @@ export class OutputWindows {
     this.entries.delete(id)
     ;(e as Entry & { closing?: boolean }).closing = true
     if (e.hangTimer) clearTimeout(e.hangTimer)
+    e.pacer?.stop()
     void e.pump?.stop()
     if (!e.win.isDestroyed()) e.win.destroy()
     this.updateBlocker()

@@ -67,6 +67,8 @@ export type OutputTarget =
   | { type: 'network'; receiverId: string }
   /** A named group of other outputs — everything in the group shows the same thing. */
   | { type: 'group'; outputIds: ID[] }
+  /** A Blackmagic DeckLink SDI port. device = "<model> · port <n>" (see @shared/decklink); mode = DeckLink mode id, e.g. "Hp29". */
+  | { type: 'decklink'; device: string; mode: string; keying?: 'none' | 'external' | 'internal'; keyLevel?: number }
 
 /**
  * An Output routes a canvas (or one region of it) to a destination.

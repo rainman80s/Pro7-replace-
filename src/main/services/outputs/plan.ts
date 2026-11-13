@@ -7,6 +7,7 @@
  */
 import type { Canvas, ID, Output, Rect, Size } from '@shared/model'
 import { evenSize, isGroup, resolveOutputs, type HealthStatus, type OutputHealth, type ResolvedOutput } from '@shared/outputs'
+import { deckLinkRate, type DeckLinkAlign, type DeckLinkDevice, type DeckLinkKeying } from '@shared/decklink'
 
 export interface PlanDisplay {
   key: string
@@ -31,7 +32,20 @@ export interface PlanReceiver {
 export type PlannedWindow =
   | { outputId: ID; kind: 'display'; displayKey: string; bounds: PlanDisplay['bounds'] }
   | { outputId: ID; kind: 'window' }
-  | { outputId: ID; kind: 'capture'; size: Size; fps: number; name: string; transparent: boolean }
+  | { outputId: ID; kind: 'capture'; size: Size; fps: number; name: string; transparent: boolean; decklink?: PlannedDeckLink }
+
+/** A capture window that feeds a DeckLink port instead of NDI. */
+export interface PlannedDeckLink {
+  device: string
+  index: number
+  displayName: string
+  mode: string
+  /** Exact rate for pacing (timeScale / frameDuration). */
+  rate: { num: number; den: number }
+  keying: DeckLinkKeying
+  keyLevel: number
+  align: DeckLinkAlign
+}
 
 export interface PlanInput {
   outputs: Output[]
@@ -41,8 +55,10 @@ export interface PlanInput {
   safeMode: boolean
   ndiAvailable: boolean
   ndiReason?: string
+  /** DeckLink ports on this machine (connected + remembered) and, when unusable, why. */
+  decklink?: { available: boolean; reason?: string; devices: DeckLinkDevice[] }
   /** Runtime facts about open windows. */
-  runtime?: Record<ID, { loaded?: boolean; crashes?: number; recovering?: boolean; fps?: number }>
+  runtime?: Record<ID, { loaded?: boolean; crashes?: number; recovering?: boolean; fps?: number; sinkProblem?: string }>
   now?: number
   safeModeShortcut?: string
 }
@@ -81,6 +97,7 @@ export function planOutputs(input: PlanInput): Plan {
   const windows: PlannedWindow[] = []
   const health: OutputHealth[] = []
   const usedDisplays = new Map<string, ID>()
+  const usedPorts = new Map<string, ID>()
 
   for (const o of input.outputs) {
     if (isGroup(o)) continue
@@ -130,6 +147,39 @@ export function planOutputs(input: PlanInput): Plan {
       if (!input.ndiAvailable) { push('unavailable', input.ndiReason ?? 'NDI isn’t installed on this computer.', size); continue }
       windows.push({ outputId: o.id, kind: 'capture', size, fps: o.frameRate ?? 30, name: t.name || o.name, transparent: !!o.transparent })
       runtimeStatus(size)
+    } else if (t.type === 'decklink') {
+      const size = evenSize(cropSize(r) ?? { width: 1920, height: 1080 })
+      const dl = input.decklink
+      if (!dl?.available) { push('unavailable', dl?.reason ?? 'DeckLink output isn’t available on this computer.', size); continue }
+      const dev = dl.devices.find((d) => d.key === t.device)
+      if (!dev || !dev.connected) {
+        push('missing', `“${t.device}” isn’t connected right now${dev?.lastSeen ? ` (last seen ${ago(now, dev.lastSeen)})` : ''}. It comes back by itself when the card is found.`, size)
+        continue
+      }
+      const mode = dev.modes.find((m) => m.id === t.mode)
+      if (!mode) { push('blocked', `“${dev.key}” can’t send the video mode chosen for “${o.name}”. Pick another mode in its settings.`, size); continue }
+      const keying = t.keying ?? 'none'
+      if ((keying === 'external' && dev.externalKeying === false) || (keying === 'internal' && dev.internalKeying === false) || (keying !== 'none' && !dev.supportsKeying)) {
+        push('blocked', `“${dev.key}” can’t do keying. Choose “Picture only”, or use a port that supports fill + key.`, size)
+        continue
+      }
+      const other = usedPorts.get(dev.key)
+      if (other) {
+        push('blocked', `“${dev.key}” is already showing “${input.outputs.find((x) => x.id === other)?.name ?? 'another output'}”. One SDI port can show one output.`, size)
+        continue
+      }
+      usedPorts.set(dev.key, o.id)
+      windows.push({
+        outputId: o.id, kind: 'capture', size, fps: mode.fps, name: o.name,
+        // Keyed outputs render with a transparent background: alpha becomes the key signal.
+        transparent: keying !== 'none' || !!o.transparent,
+        decklink: {
+          device: dev.key, index: dev.index, displayName: dev.displayName, mode: mode.id, rate: deckLinkRate(mode),
+          keying, keyLevel: Math.max(0, Math.min(255, Math.round(t.keyLevel ?? 255))), align: o.decklinkAlign ?? 'top-left'
+        }
+      })
+      if (rt?.sinkProblem) push('blocked', rt.sinkProblem, size)
+      else runtimeStatus(size)
     } else if (t.type === 'network') {
       const rx = input.receivers.find((x) => x.id === t.receiverId)
       const size = rx?.width && rx?.height ? { width: rx.width, height: rx.height } : undefined
@@ -158,7 +208,11 @@ export function planOutputs(input: PlanInput): Plan {
 /** A stable signature: if it changes, the window must be rebuilt (not just moved). */
 export function windowSignature(w: PlannedWindow): string {
   if (w.kind === 'display') return `display:${w.displayKey}`
-  if (w.kind === 'capture') return `capture:${w.size.width}x${w.size.height}@${w.fps}:${w.transparent ? 'a' : 'o'}:${w.name}`
+  if (w.kind === 'capture') {
+    const d = w.decklink
+    const dl = d ? `:dl:${d.device}#${d.index}:${d.mode}:${d.keying}:${d.keyLevel}:${d.align}` : ''
+    return `capture:${w.size.width}x${w.size.height}@${w.fps}:${w.transparent ? 'a' : 'o'}:${w.name}${dl}`
+  }
   return 'window'
 }
 

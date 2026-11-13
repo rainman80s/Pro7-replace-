@@ -32,6 +32,8 @@ export interface FrameSink {
   close(): Promise<void> | void
   /** Optional: number of receivers connected, etc. */
   connections?(): number
+  /** Optional: a plain-language reason the sink can't deliver right now ("device busy…"). Shown as the output's health. */
+  problem?(): string | undefined
 }
 
 export interface PumpStats {
@@ -74,7 +76,7 @@ export class FramePump {
   private closed = false
 
   constructor(
-    private sink: FrameSink,
+    readonly sink: FrameSink,
     private opts: FrameSinkOptions & { keepAliveMs?: number },
     private now: () => number = Date.now
   ) {}
