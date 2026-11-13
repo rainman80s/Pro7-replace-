@@ -3,6 +3,7 @@ import type {
   IntegrationStatus, PcoPlan, PcoPlanSummary, PcoServiceType, PcoSettings, PlanChange, PlanPullPreview, SongDecision
 } from '@shared/integrations'
 import { defaultPcoSettings, pcoSource } from '@shared/integrations'
+import { autoCorrectImported } from '../lyrics'
 import { defineService, type ServiceContext } from '../../core/service'
 import { newId } from '../../core/files'
 import { errMessage } from '../integrations/http'
@@ -129,7 +130,7 @@ export default defineService({
         p.arrangements.push(a)
         p.activeArrangementId = a.id
       }
-      return library.save(p)
+      return library.save(await autoCorrectImported(p))
     }
 
     api.handle('pco.status', async () => ({ ...status(), settings: await settings() }), 'local')

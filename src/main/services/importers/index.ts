@@ -17,6 +17,7 @@ import { guessProPresenterFolders, scanFolder } from './pipeline/scan'
 import { canvasesFromSuggestions, itemsForFiles, runImport } from './pipeline/run'
 import type { ImportTarget } from './pipeline/target'
 import { reportToText } from './pipeline/report'
+import { autoCorrectImported } from '../lyrics'
 import { imagesToPresentation } from './office/pptx'
 import { importReachBundle } from '../exporters/bundle-import'
 import { buildReachBundle, encodeProLyrics, lyricsExport, openLyricsExport, songCsv } from '../exporters/formats'
@@ -29,7 +30,8 @@ class CoreTarget implements ImportTarget {
   async savePresentations(list: Presentation[]): Promise<void> {
     if (!list.length) return
     // library.save stamps updatedAt; keep our fingerprint consistent by saving as-is
-    await this.ctx.library.saveMany(list)
+    // "Auto-correct imported songs" (workspace setting, on by default): capitalisation/spelling fixes on the way in.
+    await this.ctx.library.saveMany(await Promise.all(list.map((p) => autoCorrectImported(p))))
   }
   async listPlaylists(): Promise<Playlist[]> { return this.ctx.library.listPlaylists() }
   async savePlaylist(p: Playlist): Promise<void> { await this.ctx.library.savePlaylist(p) }
