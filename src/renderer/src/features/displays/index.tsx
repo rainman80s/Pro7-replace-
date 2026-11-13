@@ -1,60 +1,136 @@
-import { type ReactNode } from 'react'
-import type { Output } from '@shared/model'
+import { useEffect, useState, type ReactNode } from 'react'
+import { ProgramAudio } from '@shared/render/LiveCanvas'
+import { isGroup } from '@shared/outputs'
 import { Button, Panel, Select } from '@ui/index'
 import { defineFeature } from '../../app/feature'
 import { api, useApp } from '../../app/store'
+import { CanvasEditor } from './CanvasEditor'
+import { NetworkView } from './Network'
+import { RoutingView } from './Routing'
+import { startDisplaysSync, useDisplays } from './state'
+import './displays.css'
 
-/** BASELINE Displays screen: see connected displays, route a canvas/region to each. */
+type Tab = 'routing' | 'canvases' | 'network' | 'sound'
+const TABS: { id: Tab; name: string }[] = [
+  { id: 'routing', name: 'Where things show' },
+  { id: 'canvases', name: 'Screens & regions' },
+  { id: 'network', name: 'Network displays' },
+  { id: 'sound', name: 'Sound & safety' }
+]
+
 function DisplaysView(): ReactNode {
-  const { displays, outputs, workspace } = useApp()
-  const canvases = workspace?.canvases ?? []
-  const save = (output: Output): void => void api.invoke('outputs.save', { output })
-  const add = (target: Output['target'], name: string): void => save({ id: '', name, canvasId: canvases[0]?.id ?? 'main', target, enabled: true })
+  const [tab, setTabState] = useState<Tab>(() => (localStorage.getItem('reach.displays.tab') as Tab) || 'routing')
+  const setTab = (t: Tab): void => { localStorage.setItem('reach.displays.tab', t); setTabState(t) }
+  const { safeMode, health } = useDisplays()
+  useEffect(() => { startDisplaysSync() }, [])
+  useEffect(() => {
+    const on = (e: Event): void => setTab((e as CustomEvent<Tab>).detail)
+    window.addEventListener('reach:displays-tab', on)
+    return () => window.removeEventListener('reach:displays-tab', on)
+  }, [])
+  const problems = health.filter((h) => !h.ok && h.status !== 'safe-mode')
   return (
-    <div className="col scroll" style={{ padding: 16, height: '100%', gap: 16 }}>
-      <div className="row">
-        <h2 style={{ font: '28px/1.2 var(--font-display)', fontWeight: 400, margin: 0 }}>Displays</h2>
+    <div className="dsp-root">
+      <div className="dsp-top row">
+        <h2 className="dsp-h">Displays</h2>
+        <div className="dsp-tabs row">
+          {TABS.map((t) => <button key={t.id} className={`dsp-tab ${tab === t.id ? 'on' : ''}`} onClick={() => setTab(t.id)} data-tab={t.id}>{t.name}</button>)}
+        </div>
         <div className="grow" />
-        <Button onClick={() => void api.invoke('outputs.identify')}>Identify</Button>
-        <Button onClick={() => add({ type: 'window' }, 'Preview Window')}>+ Floating window</Button>
+        {problems.length > 0 && <span className="dsp-problems" title={problems.map((p) => `${p.name}: ${p.message}`).join('\n')}>{problems.length} need attention</span>}
+        <SafeModeButton />
       </div>
-      <Panel title="Connected to this computer">
-        <div className="col" style={{ padding: 12 }}>
-          {displays.map((d) => (
-            <div key={d.key} className="row">
-              <strong style={{ width: 240 }}>{d.label}{d.primary ? ' (operator)' : ''}</strong>
-              <span className="dim" style={{ width: 120 }}>{d.bounds.width}×{d.bounds.height}</span>
-              {d.outputIds.length ? <span className="dim">in use</span> : <Button size="sm" variant="primary" disabled={d.primary} onClick={() => add({ type: 'display', displayKey: d.key }, d.label)}>Use as output</Button>}
-            </div>
-          ))}
+      {safeMode.on && (
+        <div className="dsp-safe-banner row">
+          <strong>Safe mode — every output is hidden.</strong>
+          <span className="grow">The audience sees nothing (or black). Press {safeMode.shortcut} or click the button to bring them back.</span>
+          <Button variant="live" onClick={() => void api.invoke('outputs.safeMode', { on: false })}>Bring outputs back</Button>
+        </div>
+      )}
+      <div className="dsp-body">
+        {tab === 'routing' && <RoutingView />}
+        {tab === 'canvases' && <CanvasEditor />}
+        {tab === 'network' && <NetworkView />}
+        {tab === 'sound' && <SoundAndSafety />}
+      </div>
+    </div>
+  )
+}
+
+function SafeModeButton(): ReactNode {
+  const { safeMode } = useDisplays()
+  return safeMode.on
+    ? <Button variant="live" onClick={() => void api.invoke('outputs.safeMode', { on: false })} data-safe-mode="on">Bring outputs back</Button>
+    : <Button variant="danger" onClick={() => void api.invoke('outputs.safeMode', { on: true })} title={`Hide every output immediately (${safeMode.shortcut})`} data-safe-mode="off">Hide all outputs</Button>
+}
+
+function SoundAndSafety(): ReactNode {
+  const { audio, safeMode, ndi } = useDisplays()
+  const outputs = useApp((s) => s.outputs)
+  const value = audio.device === 'output' ? `o:${audio.outputId}` : audio.device
+  return (
+    <div className="dsp-sound col">
+      <Panel title="Program audio">
+        <div className="col" style={{ padding: 12, gap: 8 }}>
+          <span className="dsp-help">Video and audio-file sound plays from exactly <b>one</b> place, so you never get an echo. Usually that is this computer (its headphone or HDMI audio goes to the sound desk).</span>
+          <label className="row" style={{ gap: 8 }}>
+            <span style={{ width: 140 }}>Audio plays from</span>
+            <Select style={{ width: 360 }} value={value} data-audio-route onChange={(e) => {
+              const v = e.target.value
+              void api.invoke('outputs.setAudioRoute', v.startsWith('o:') ? { device: 'output', outputId: v.slice(2) } : { device: v as 'operator' | 'none' })
+            }}>
+              <option value="operator">This computer (the operator window)</option>
+              <optgroup label="An output (e.g. a TV with speakers, an HDMI audio embedder)">
+                {outputs.filter((o) => o.target.type !== 'ndi').map((o) => <option key={o.id} value={`o:${o.id}`}>{o.name}{isGroup(o) ? ' (first screen in group)' : ''}</option>)}
+              </optgroup>
+              <option value="none">Nowhere (muted)</option>
+            </Select>
+          </label>
         </div>
       </Panel>
-      <Panel title="Outputs">
-        <div className="col" style={{ padding: 12 }}>
-          {!outputs.length && <span className="dim">No outputs yet.</span>}
-          {outputs.map((o) => {
-            const canvas = canvases.find((c) => c.id === o.canvasId)
-            return (
-              <div key={o.id} className="row">
-                <input type="checkbox" checked={o.enabled} onChange={(e) => save({ ...o, enabled: e.target.checked })} />
-                <strong style={{ width: 220 }}>{o.name}</strong>
-                <span className="dim" style={{ width: 90 }}>{o.target.type}</span>
-                <Select value={o.canvasId} onChange={(e) => save({ ...o, canvasId: e.target.value, regionId: undefined })}>{canvases.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</Select>
-                <Select value={o.regionId ?? ''} onChange={(e) => save({ ...o, regionId: e.target.value || undefined })}>
-                  <option value="">Whole canvas</option>
-                  {canvas?.regions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-                </Select>
-                <Button size="sm" variant="ghost" onClick={() => void api.invoke('outputs.remove', { id: o.id })}>Remove</Button>
-              </div>
-            )
-          })}
+      <Panel title="Safe mode">
+        <div className="col" style={{ padding: 12, gap: 8 }}>
+          <span className="dsp-help">If something wrong is on the screens, press <b>{safeMode.shortcut || '…'}</b> (works even when Reach isn’t the front window) or click “Hide all outputs”. Every output on this computer and every network display goes dark at once. Press it again to bring them back.</span>
+          <div><SafeModeButton /></div>
+        </div>
+      </Panel>
+      <Panel title="NDI">
+        <div className="col" style={{ padding: 12, gap: 6 }}>
+          {ndi?.available ? <span>NDI is ready{ndi.version ? ` (${ndi.version})` : ''}. Add an NDI output under “Where things show”.</span> : <span className="dsp-warn info">{ndi?.reason ?? 'Checking…'}</span>}
+          {ndi?.senders.map((s) => <span key={s.outputId} className="dim">{s.name}: {s.fps} fps, {s.frames} frames sent{s.dropped ? `, ${s.dropped} skipped` : ''}</span>)}
         </div>
       </Panel>
     </div>
   )
 }
 
+/** Compact status for the top bar: how many outputs are live / need attention. Click → Displays. */
+function OutputsStatus(): ReactNode {
+  const { health, safeMode } = useDisplays()
+  useEffect(() => { startDisplaysSync() }, [])
+  const leaves = health.filter((h) => !health.some((g) => g.outputId !== h.outputId && h.groupId === g.outputId) || !h.groupId)
+  const bad = leaves.filter((h) => !h.ok && h.status !== 'safe-mode').length
+  const live = leaves.filter((h) => h.status === 'live').length
+  if (!health.length && !safeMode.on) return null
+  return (
+    <button className={`dsp-status ${safeMode.on ? 'safe' : bad ? 'bad' : 'ok'}`} onClick={() => useApp.getState().setView('displays')} title={health.map((h) => `${h.name}: ${h.message}`).join('\n')} data-outputs-status>
+      <span className="dsp-dot" />{safeMode.on ? 'Outputs hidden' : bad ? `${bad} output${bad > 1 ? 's' : ''} need attention` : `${live} output${live === 1 ? '' : 's'} live`}
+    </button>
+  )
+}
+
+/** Plays program audio in the operator window when that is the chosen place (and only then). */
+function OperatorAudio(): ReactNode {
+  const live = useApp((s) => s.live)
+  const { audio } = useDisplays()
+  useEffect(() => { startDisplaysSync() }, [])
+  if (audio.device !== 'operator' || window.reachBridge === undefined) return null
+  return <ProgramAudio live={live} />
+}
+
 export default defineFeature({
   id: 'displays',
-  views: [{ id: 'displays', title: 'Displays', order: 60, component: DisplaysView }]
+  views: [{ id: 'displays', title: 'Displays', order: 60, component: DisplaysView }],
+  toolbar: [{ id: 'outputs-status', order: 90, component: OutputsStatus }],
+  background: [OperatorAudio]
 })
