@@ -137,6 +137,25 @@ try {
   const live = await waitFor(async () => { const l = await inv('live.get'); return l.slide?.presentationTitle?.includes('John 3:16') ? l : null }, 8000, 'bible live')
   console.log('   live:', live.slide.presentationTitle)
 
+  step('Figma: frames → image slides; re-sync updates only the changed frame')
+  await win.click('.nav-item:has-text("Integrations")')
+  await win.fill('[data-testid=figma-token]', 'figd_test')
+  await win.click('[data-testid=figma-connect]')
+  await win.fill('[data-testid=figma-url]', 'https://www.figma.com/design/FiLeKey1234567890ab/Sunday?node-id=0-1')
+  await win.click('[data-testid=figma-inspect]')
+  await win.waitForSelector('[data-testid=figma-card] >> text=Series Title')
+  if (shot) { await win.locator('[data-testid=figma-card]').scrollIntoViewIfNeeded(); await win.screenshot({ path: join(shot, 'figma-card.png') }) }
+  await win.click('[data-testid=figma-import]')
+  const fig = await waitFor(async () => (await inv('library.list')).find((p) => p.title.startsWith('Sunday Slides')), 15000, 'figma import')
+  const figP = await inv('library.get', { id: fig.id })
+  console.log('   figma slides:', figP.slides.map((s) => s.label + (s.variants ? ' (+LED variant)' : '')).join(' | '))
+  if (figP.slides.length !== 3 || figP.slides[0].elements[0].type !== 'image') throw new Error('figma slides wrong')
+  mocks.state.figma.edits = { '1:3': ' v2' }
+  const hitsBefore = mocks.state.hits.filter((h) => h.includes('/v1/images/')).length
+  const rs = await inv('figma.resync', { presentationId: fig.id })
+  if (rs.changes.length !== 1 || rs.changes[0].type !== 'changed') throw new Error('figma resync: ' + JSON.stringify(rs.changes))
+  if (mocks.state.hits.filter((h) => h.includes('/v1/images/')).length !== hitsBefore + 1) throw new Error('expected exactly one render call')
+
   step('Show screen sync panel')
   await win.click('.nav-item:has-text("Show")')
   if (shot) await win.screenshot({ path: join(shot, 'show-with-plan.png') })
