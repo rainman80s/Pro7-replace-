@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { Playlist, PlaylistItem, Presentation } from '@shared/model'
 import { groupOfSlide, orderedSlides, slideText } from '@shared/model'
 import { mediaUrl } from '@shared/media'
@@ -7,6 +7,8 @@ import { Badge, Button, Empty, Icon, Kbd, Slider, Spinner, Tooltip, openContextM
 import { openPresentation, useApp, useLocked } from '../../app/store'
 import { goToSlide, showMedia, useShowUi } from './actions'
 import { formatLength, itemTitle } from './logic'
+import { BackgroundDialog, SlideActionsDialog } from './SlideDialogs'
+import { setBackground } from './slideOps'
 
 /** Centre column: the slides of whatever is selected. Clicking a slide puts it on screen. */
 export function SlideGrid({ playlist }: { playlist: Playlist | undefined }): ReactNode {
@@ -20,6 +22,7 @@ export function SlideGrid({ playlist }: { playlist: Playlist | undefined }): Rea
   const loadPresentation = useApp((s) => s.loadPresentation)
   const locked = useLocked()
   const ui = useShowUi()
+  const [dialog, setDialog] = useState<{ kind: 'actions' | 'background'; slideId: string } | null>(null)
 
   const item: PlaylistItem | undefined = playlist?.items.find((x) => x.id === selectedItemId)
   const presentation: Presentation | undefined = selectedPresentationId ? presentations[selectedPresentationId] : undefined
@@ -118,7 +121,12 @@ export function SlideGrid({ playlist }: { playlist: Playlist | undefined }): Rea
               onClick={() => void goToSlide(presentation.id, i, { playlistId: playlist?.id, itemId: item?.id })}
               onContextMenu={(e) => openContextMenu(e, [
                 { label: 'Show this slide', icon: 'play', onSelect: () => void goToSlide(presentation.id, i, { playlistId: playlist?.id, itemId: item?.id }) },
-                locked ? null : { label: 'Edit slides', icon: 'edit', onSelect: () => openPresentation(presentation.id, 'edit') }
+                locked ? null : { label: 'Edit slide', icon: 'edit', onSelect: () => openPresentation(presentation.id, 'edit', s.id), testId: 'slide-edit' },
+                locked ? null : { label: 'Edit all slides', icon: 'edit', onSelect: () => openPresentation(presentation.id, 'edit') },
+                locked ? null : { type: 'separator' },
+                locked ? null : { label: 'Slide actions…', icon: 'sparkle', onSelect: () => setDialog({ kind: 'actions', slideId: s.id }), testId: 'slide-actions' },
+                locked ? null : { label: 'Set background…', icon: 'image', onSelect: () => setDialog({ kind: 'background', slideId: s.id }), testId: 'slide-set-bg' },
+                locked || !s.background ? null : { label: 'Clear background', icon: 'close', onSelect: () => void setBackground(presentation.id, [s.id], undefined, 'this slide'), testId: 'slide-clear-bg' }
               ])}>
               <span className="slide-frame">
                 <SlideThumb checker elements={s.elements} background={s.background} size={presentation.size} />
@@ -134,6 +142,9 @@ export function SlideGrid({ playlist }: { playlist: Playlist | undefined }): Rea
           )
         })}
       </div>
+
+      {dialog?.kind === 'actions' && presentation.slides.find((x) => x.id === dialog.slideId) && <SlideActionsDialog presentation={presentation} slide={presentation.slides.find((x) => x.id === dialog.slideId)!} onClose={() => setDialog(null)} />}
+      {dialog?.kind === 'background' && <BackgroundDialog presentationId={presentation.id} slideIds={[dialog.slideId]} scope="this slide" onClose={() => setDialog(null)} />}
 
       <footer className="grid-hint" data-testid="advance-hint">
         <span><strong>Click a slide</strong> to put it on the screens</span>
