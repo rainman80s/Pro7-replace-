@@ -8,6 +8,7 @@ import { Badge, Button, Empty, Icon, Kbd, Slider, Spinner, Tooltip, openContextM
 import { openPresentation, useApp, useLocked } from '../../app/store'
 import { goToSlide, showMedia, useShowUi } from './actions'
 import { formatLength, itemTitle } from './logic'
+import { NotionPull } from './NotionPull'
 import { BackgroundDialog, SlideActionsDialog } from './SlideDialogs'
 import { addMacroAction, setBackground } from './slideOps'
 import { MEDIA_MIME } from './MediaBin'
@@ -56,6 +57,7 @@ export function SlideGrid({ playlist }: { playlist: Playlist | undefined }): Rea
         <Empty title={item.title} icon="placeholder" action={locked ? undefined : <>
           <Button variant="primary" icon="search" onClick={() => ui.openSearch({ kind: 'replace', itemId: item.id })}>Choose from the library</Button>
           <Button icon="music" onClick={() => ui.set({ newSong: { addToService: true } })}>New from pasted text</Button>
+          {playlist && <NotionPull playlist={playlist} item={item} />}
         </>}>
           {item.hint ? `Still to be added: ${item.hint}.` : 'This part of the service has not been prepared yet.'}
           {locked && ' Ask your tech lead.'}

@@ -38,6 +38,17 @@ export function ServicePanel(): ReactNode {
     onInsert: (presentationId, index) => void addPresentationToService(presentationId, index)
   })
 
+  const [fillOver, setFillOver] = useState<string | null>(null)
+  /** Drop a library item on a placeholder: it becomes that presentation, keeping the placeholder's title, notes, people and length. */
+  const fillPlaceholder = (itemId: string, presentationId: string): void => {
+    if (!playlist) return
+    const it = playlist.items.find((x) => x.id === itemId)
+    if (it?.type !== 'placeholder') return
+    void savePlaylist(updateItem(playlist, itemId, { type: 'presentation', presentationId, title: it.title, notes: it.notes, people: it.people, length: it.length, hint: undefined } as never))
+    select({ selectedPlaylistItemId: itemId, selectedPresentationId: presentationId })
+    toast(`"${it.title}" filled`, 'success')
+  }
+
   const add = (item: PlaylistItem, index?: number): void => {
     if (!playlist) return
     void savePlaylist(insertItem(playlist, item, index))
@@ -136,7 +147,22 @@ export function ServicePanel(): ReactNode {
         ) : playlist.items.map((it, i) => {
           const title = itemTitle(it, library)
           const start = timeline.starts[it.id]
-          const reorder = dnd.itemProps(i)
+          let reorder = dnd.itemProps(i)
+          if (it.type === 'placeholder' && !locked) {
+            const base = reorder
+            reorder = {
+              ...base,
+              className: `${base.className} ${fillOver === it.id ? 'fill-over' : ''}`,
+              onDragOver: (e) => {
+                if (e.dataTransfer?.types.includes(LIBRARY_DND)) { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'copy'; setFillOver(it.id) } else base.onDragOver(e)
+              },
+              onDragLeave: (e) => { setFillOver((o) => (o === it.id ? null : o)); base.onDragLeave(e) },
+              onDrop: (e) => {
+                const id = e.dataTransfer?.getData(LIBRARY_DND)
+                if (id) { e.preventDefault(); e.stopPropagation(); setFillOver(null); fillPlaceholder(it.id, id) } else base.onDrop(e)
+              }
+            }
+          }
           if (it.type === 'header') {
             return (
               <div key={it.id} {...reorder} className={`svc-header ${reorder.className}`} data-testid="service-header" style={{ ['--tint' as string]: it.color }}

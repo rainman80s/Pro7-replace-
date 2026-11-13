@@ -203,3 +203,6 @@
 .slide-acts { display: inline-flex; align-items: center; gap: 3px; }
 .slide-act-dot { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 1.5px var(--bg-raised); }
 .slide-act-more { font: 10px var(--font-mono); color: var(--text-faint); }
+.svc-item.fill-over { outline: 2px solid var(--accent); outline-offset: -2px; background: var(--accent-soft); }
+.notion-hint { flex-basis: 100%; margin: 4px 0 0; font-size: 12.5px; color: var(--text-dim); }
+.notion-hint .link { all: unset; cursor: pointer; color: var(--accent-text); text-decoration: underline; }
