@@ -13,7 +13,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "dist:mac": "electron-vite build && electron-builder --mac",
-    "dist:win": "electron-vite build && electron-builder --win"
+    "dist:win": "electron-vite build && electron-builder --win",
+    "pp7:descriptor": "node scripts/build-pp7-descriptor.mjs",
+    "pp7:inspect": "tsx scripts/pp7-inspect.ts"
   },
   "license": "UNLICENSED",
   "devDependencies": {
