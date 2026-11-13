@@ -17,8 +17,10 @@
 .ctl-timer-value.lvl-over, .ctl-timer-value.lvl-end { color: var(--danger); }
 .ctl-timer-btns { grid-column: 1 / -1; display: flex; gap: 4px; flex-wrap: wrap; }
 .ctl-foot { padding-top: 4px; }
-.ctl-macros, .ctl-props, .ctl-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.ctl-macro { border: 0; border-radius: var(--radius); padding: 10px 12px; color: #fff; font: 600 13px var(--font-ui); cursor: pointer; text-shadow: 0 1px 2px rgba(0,0,0,.4); flex: 1 1 40%; text-align: left; }
+.ctl-macros { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+.ctl-props, .ctl-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ctl-macro { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: var(--radius); padding: 8px; color: #fff; font: 600 12.5px/1.2 var(--font-ui); cursor: grab; text-shadow: 0 1px 2px rgba(0,0,0,.4); text-align: center; overflow: hidden; }
+.ctl-macro-name { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
 .ctl-macro:hover { filter: brightness(1.12); }
 .ctl-macro:active { transform: translateY(1px); }
 .ctl-prop { border: 1px solid var(--border); background: var(--bg-raised); color: var(--text); border-radius: var(--radius); padding: 7px 10px; cursor: pointer; font: inherit; }
