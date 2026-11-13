@@ -3,7 +3,7 @@
  * Everything here is free of Node/React so it runs in the main process, the operator UI,
  * the phone remote and unit tests alike.
  */
-import type { ID, LiveState, MediaRef, Size, Slide, SlideAction, TextElement, TextStyle, TimerState } from './model'
+import type { ID, LiveState, Macro, MediaRef, Size, Slide, SlideAction, TextElement, TextStyle, TimerState } from './model'
 
 /* ───────────────────────────── Timers ───────────────────────────── */
 
@@ -276,7 +276,7 @@ export interface ActionTypeInfo {
 }
 
 export const CLEAR_LAYERS = [
-  { value: 'all', label: 'Everything' }, { value: 'slide', label: 'Slide' }, { value: 'background', label: 'Background' }, { value: 'video', label: 'Video' },
+  { value: 'all', label: 'Everything' }, { value: 'slide', label: 'Slide' }, { value: 'media', label: 'Background & video' }, { value: 'background', label: 'Background' }, { value: 'video', label: 'Video' },
   { value: 'audio', label: 'Audio' }, { value: 'props', label: 'Props' }, { value: 'message', label: 'Messages' }, { value: 'announcement', label: 'Announcements' }, { value: 'mask', label: 'Mask' }
 ]
 
@@ -287,6 +287,49 @@ export function describeAction(a: Pick<SlideAction, 'type' | 'params' | 'label'>
   const p = a.params ?? {}
   const bits = (info?.params ?? []).map((s) => p[s.key]).filter((v) => v !== undefined && v !== '' && typeof v !== 'object').slice(0, 3)
   return [info?.label ?? a.type, ...bits.map(String)].join(' · ')
+}
+
+/** Find a macro by id, name (case-insensitive) or 1-based `index`. */
+export function findMacro(list: Macro[], params: { id?: unknown; index?: unknown }): Macro | undefined {
+  const k = params.id
+  if (k !== undefined && k !== null && k !== '') {
+    const s = String(k)
+    return list.find((m) => m.id === s) ?? list.find((m) => m.name.toLowerCase() === s.toLowerCase())
+  }
+  const i = Number(params.index)
+  return Number.isFinite(i) && i >= 1 ? list[Math.round(i) - 1] : undefined
+}
+
+export interface RunnerDeps {
+  /** Run one (non-macro) action now. */
+  run(a: SlideAction): Promise<void> | void
+  sleep(ms: number): Promise<void>
+  macros(): Macro[]
+  onError?(a: SlideAction, e: unknown): void
+}
+
+/**
+ * Run a list of actions in order. `delay` (seconds) waits before that action.
+ * Nested `macro.run` actions are run inline; a macro that (directly or indirectly) runs itself is skipped.
+ * Returns how many actions ran without error.
+ */
+export async function runActionList(actions: SlideAction[], deps: RunnerDeps, chain: ID[] = []): Promise<number> {
+  let ok = 0
+  for (const a of actions) {
+    if (a.delay && a.delay > 0) await deps.sleep(a.delay * 1000)
+    try {
+      if (a.type === 'macro.run') {
+        const m = findMacro(deps.macros(), a.params ?? {})
+        if (!m) throw new Error(`Macro not found: ${String(a.params?.id ?? a.params?.index ?? '')}`)
+        if (chain.includes(m.id)) throw new Error(`"${m.name}" can't run itself`)
+        await runActionList(m.actions, deps, [...chain, m.id])
+      } else await deps.run(a)
+      ok++
+    } catch (e) {
+      deps.onError?.(a, e)
+    }
+  }
+  return ok
 }
 
 export const MACRO_COLORS = ['#3886CE', '#E6A20F', '#4FA88B', '#D8523F', '#8E6BC9', '#C95B93', '#6F6E6A']
@@ -425,6 +468,8 @@ export interface AudioDoc {
 
 export interface AudioStatus {
   playlistId: ID | null
+  /** Playlist that "Trigger Audio (track N)" uses when none is given. */
+  selectedId?: ID | null
   index: number
   trackName: string
   playing: boolean
@@ -530,6 +575,7 @@ declare module './api' {
     'audio.remove': { req: { id: ID }; res: void }
     'audio.play': { req: { playlistId: ID; index?: number }; res: AudioStatus }
     'audio.stop': { req: { fade?: boolean } | void; res: AudioStatus }
+    'audio.pause': { req: void; res: AudioStatus }
     'audio.skip': { req: { delta?: number } | void; res: AudioStatus }
     'audio.volume': { req: { volume: number }; res: AudioStatus }
     'audio.status': { req: void; res: AudioStatus }
