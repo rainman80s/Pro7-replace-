@@ -13,7 +13,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "dist:mac": "electron-vite build && electron-builder --mac",
-    "dist:win": "electron-vite build && electron-builder --win"
+    "dist:win": "electron-vite build && electron-builder --win",
+    "pp7:descriptor": "node scripts/build-pp7-descriptor.mjs",
+    "pp7:inspect": "tsx scripts/pp7-inspect.ts"
   },
   "license": "UNLICENSED",
   "devDependencies": {
@@ -25,11 +27,13 @@
     "electron": "^45.3.1",
     "electron-builder": "^26.18.0",
     "electron-vite": "^6.0.0",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.3.8",
     "vitest": "^5.1.0"
   },
   "dependencies": {
+    "@xmldom/xmldom": "^0.8.15",
     "bonjour-service": "^1.4.4",
     "fflate": "^0.8.3",
     "nanoid": "^6.0.2",
