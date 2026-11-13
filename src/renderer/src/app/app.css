@@ -34,7 +34,7 @@
 .status-item { display: inline-flex; align-items: center; gap: 7px; height: 22px; padding: 0 8px; border: 0; border-radius: 4px; background: transparent; color: var(--text-dim); font: inherit; white-space: nowrap; cursor: pointer; }
 .status-item:disabled { cursor: default; }
 .status-item:not(:disabled):hover { background: var(--bg-hover); color: var(--text); }
-.status-item.warn { color: #f2c35c; }
+.status-item.warn { color: var(--warn-text); }
 .status-item.danger { color: #f0a093; }
 .status-text { padding: 0 8px; white-space: nowrap; }
 .status-clock { color: var(--text); font-variant-numeric: tabular-nums; }

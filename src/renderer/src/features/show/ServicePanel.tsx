@@ -79,7 +79,7 @@ export function ServicePanel(): ReactNode {
 
   const serviceMenu = (): MenuItems => [
     { type: 'heading', label: 'Services' },
-    ...[...playlists].sort(byDate).map((p) => ({ label: <span>{p.name}{p.date && <span className="dim"> · {formatServiceDate(p.date).replace(/^\w+ /, '')}</span>}</span>, checked: p.id === selectedPlaylistId, onSelect: () => select({ selectedPlaylistId: p.id, selectedPlaylistItemId: null }) })),
+    ...[...playlists].sort(byDate).map((p) => ({ label: <span>{p.name}{p.date && <span className="dim"> · {formatServiceDate(p.date).replace(/^\w+ /, '')}</span>}</span>, checked: p.id === selectedPlaylistId, onSelect: () => select({ selectedPlaylistId: p.id, selectedPlaylistItemId: null, selectedPresentationId: null }) })),
     locked ? null : { type: 'separator' },
     locked ? null : { label: 'New service…', icon: 'plus', onSelect: () => { const date = comingSunday(); setServiceForm({ mode: 'new', date, name: uniqueName(formatServiceDate(date) || 'New service', playlists.map((p) => p.name)) }) }, testId: 'service-new' },
     locked || !playlist ? null : { label: 'Rename or change date…', icon: 'rename', onSelect: () => setServiceForm({ mode: 'edit', name: playlist.name, date: playlist.date ?? '' }), testId: 'service-rename' },
@@ -94,7 +94,7 @@ export function ServicePanel(): ReactNode {
     await api.invoke('playlists.delete', { id: p.id }).catch((e) => toast("Couldn't delete the service", 'error', String(e)))
     const rest = useApp.getState().playlists.filter((x) => x.id !== p.id).sort(byDate)
     useApp.setState({ playlists: rest })
-    select({ selectedPlaylistId: rest[0]?.id ?? null, selectedPlaylistItemId: null })
+    select({ selectedPlaylistId: rest[0]?.id ?? null, selectedPlaylistItemId: null, selectedPresentationId: null })
   }
 
   const submitService = async (): Promise<void> => {
@@ -107,7 +107,7 @@ export function ServicePanel(): ReactNode {
     setServiceForm(null)
     if (!next) return
     await savePlaylist(next)
-    select({ selectedPlaylistId: next.id, ...(serviceForm.mode === 'edit' ? {} : { selectedPlaylistItemId: null }) })
+    select({ selectedPlaylistId: next.id, ...(serviceForm.mode === 'edit' ? {} : { selectedPlaylistItemId: null, selectedPresentationId: null }) })
   }
 
   return (

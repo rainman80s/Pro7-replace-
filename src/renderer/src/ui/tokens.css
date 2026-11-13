@@ -40,7 +40,9 @@
   --danger: #d8523f;
   --danger-soft: rgba(216, 82, 63, .14);
   --ok: #5fae8f;
-  --warn: var(--mustard);
+  /* Warnings are terracotta, NOT Mustard: Mustard only ever means "live". */
+  --warn: #e07b4f;
+  --warn-text: #f0a47f;
   --focus: #9cc6ee;
 
   /* type */

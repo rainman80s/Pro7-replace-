@@ -20,3 +20,4 @@ export {
 } from './overlays'
 export { useDragReorder, dragSource, moveItem } from './reorder'
 export { ErrorBoundary } from './ErrorBoundary'
+export { QRCode } from './QRCode'

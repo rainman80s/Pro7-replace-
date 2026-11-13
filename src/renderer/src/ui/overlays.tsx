@@ -271,7 +271,8 @@ const dismissToast = (id: number): void => useToasts.setState((s) => ({ toasts: 
 export function toast(title: string, level: ToastLevel = 'info', detail?: string, action?: Toast['action']): void {
   const id = Date.now() + Math.random()
   // Identical messages don't pile up.
-  useToasts.setState((s) => ({ toasts: [...s.toasts.filter((t) => !(t.title === title && t.detail === detail)).slice(-3), { id, level, title, detail, action }] }))
+  useToasts.setState((s) => ({ toasts: [...s.toasts.filter((t) => !(t.title === title && t.detail === detail))
+    .slice(-2), { id, level, title, detail, action }] }))
   setTimeout(() => dismissToast(id), action ? 7000 : level === 'error' ? 8000 : 4000)
 }
 

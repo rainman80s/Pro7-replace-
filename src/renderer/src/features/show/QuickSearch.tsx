@@ -56,7 +56,7 @@ function QuickSearchDialog({ onClose }: { onClose: () => void }): ReactNode {
       for (const pl of playlists) {
         if (q && matchScore(q, pl.name) === null) continue
         if (!q && pl.id === playlist?.id) continue
-        out.push({ section: 'Services', id: `s:${pl.id}`, title: pl.name, subtitle: `${pl.items.filter((x) => x.type !== 'header').length} items`, icon: 'calendar', actions: [{ label: 'Open', run: () => useApp.getState().select({ selectedPlaylistId: pl.id, selectedPlaylistItemId: null }) }] })
+        out.push({ section: 'Services', id: `s:${pl.id}`, title: pl.name, subtitle: `${pl.items.filter((x) => x.type !== 'header').length} items`, icon: 'calendar', actions: [{ label: 'Open', run: () => useApp.getState().select({ selectedPlaylistId: pl.id, selectedPlaylistItemId: null, selectedPresentationId: null }) }] })
       }
       if (q && !locked) {
         out.push({ section: 'Create', id: 'new-song', title: `New song “${q}”…`, subtitle: 'Paste the lyrics on the next step', icon: 'plus', actions: [{ label: 'Create', run: () => useShowUi.getState().set({ newSong: { addToService: !!playlist } }) }] })

@@ -33,7 +33,7 @@
 .svc-item.is-placeholder { border: 1px dashed var(--border-strong); background: transparent; }
 .svc-item.is-placeholder .svc-title { color: var(--text-dim); font-style: italic; }
 .svc-item.is-missing .svc-title { color: var(--text-faint); text-decoration: line-through; }
-.svc-item.is-missing .svc-icon { color: #f2c35c; }
+.svc-item.is-missing .svc-icon { color: var(--warn-text); }
 
 /* ───────────── Library panel ───────────── */
 .lib { display: flex; flex-direction: column; min-height: 0; flex: 1 1 40%; }
