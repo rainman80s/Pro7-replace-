@@ -8,6 +8,7 @@ import { mediaKindFromPath } from '@shared/media'
 import { api, type CallContext } from './api'
 import { local } from './local'
 import { workspace } from './workspace'
+import { streamTo } from './stream-file'
 
 const MIME: Record<string, string> = {
   html: 'text/html; charset=utf-8', js: 'text/javascript', mjs: 'text/javascript', css: 'text/css', json: 'application/json',
@@ -85,9 +86,15 @@ class NetServer {
     this.rendererDir = rendererDir
     this.devUrl = devUrl ?? ''
     const preferred = Number(process.env.REACH_PORT) || local.get('serverPort', 4780)
-    this.http = createServer((req, res) => void this.handle(req, res))
+    this.http = createServer((req, res) => {
+      req.on('error', () => undefined)
+      res.on('error', () => undefined)
+      void this.handle(req, res).catch(() => { try { res.destroy() } catch { /* ignore */ } })
+    })
+    this.http.on('clientError', (_e, socket) => { try { socket.destroy() } catch { /* ignore */ } })
     this.port = await listen(this.http, preferred)
     this.wss = new WebSocketServer({ server: this.http, path: '/ws' })
+    this.wss.on('error', (e) => console.warn('[server] ws error', e.message))
     this.wss.on('connection', (ws, req) => this.onSocket(ws, req))
     api.addSink((event, payload) => {
       const msg = JSON.stringify({ event, payload })
@@ -108,6 +115,7 @@ class NetServer {
       connectedAt: Date.now(),
       send: (event, payload) => { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify({ event, payload })) }
     }
+    ws.on('error', (e) => console.warn('[server] socket error', e.message))
     this.clients.set(client.id, client)
     this.clientListeners.forEach((l) => l('connect', client))
     ws.on('message', async (raw) => {
@@ -242,12 +250,11 @@ export async function serveFile(req: IncomingMessage, res: ServerResponse, file:
     }
     res.writeHead(206, { 'content-type': type, 'content-range': `bytes ${start}-${end}/${stat.size}`, 'accept-ranges': 'bytes', 'content-length': end - start + 1, 'cache-control': cache })
     if (req.method === 'HEAD') return void res.end()
-    createReadStream(file, { start, end }).pipe(res)
-    return
+    return void streamTo(res, createReadStream(file, { start, end }), file)
   }
   res.writeHead(200, { 'content-type': type, 'content-length': stat.size, 'accept-ranges': 'bytes', 'cache-control': cache })
   if (req.method === 'HEAD') return void res.end()
-  createReadStream(file).pipe(res)
+  streamTo(res, createReadStream(file), file)
 }
 
 export const server = new NetServer()

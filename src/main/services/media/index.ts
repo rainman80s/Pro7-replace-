@@ -13,6 +13,8 @@ import { defineService } from '../../core/service'
 declare module '@shared/api' {
   interface ApiMethods {
     /** Send a dropped file in chunks (IPC only). `done` on the last chunk returns the imported item. */
+    /** Merge metadata (thumbnails, size, duration) into many media items with ONE write of the bin. */
+    'media.updateMany': { req: { items: (Partial<MediaItem> & { id: string })[] }; res: void }
     'media.upload': { req: { uploadId: string; name: string; folder?: string; chunk: Uint8Array; done: boolean }; res: MediaItem | null }
   }
 }
@@ -20,6 +22,11 @@ declare module '@shared/api' {
 export default defineService({
   name: 'media',
   setup(ctx) {
+    ctx.api.handle('media.updateMany', async ({ items }) => {
+      const byId = new Map(items.map((i) => [i.id, i]))
+      const list = ctx.library.listMedia().map((m) => (byId.has(m.id) ? { ...m, ...byId.get(m.id) } : m))
+      await ctx.library.replaceMedia(list)
+    })
     const open = new Map<string, { path: string; stream: WriteStream }>()
     ctx.api.handle('media.upload', async ({ uploadId, name, folder, chunk, done }) => {
       let up = open.get(uploadId)

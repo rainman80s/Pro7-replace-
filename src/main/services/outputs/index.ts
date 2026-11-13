@@ -1,4 +1,5 @@
 import { app, globalShortcut } from 'electron'
+import { allThemes } from '@shared/themes'
 import type { ID, Output, StageLayout, Theme } from '@shared/model'
 import type { OutputDescription } from '@shared/api'
 import {
@@ -151,7 +152,7 @@ async function describe(req: { outputId?: ID; receiverId?: string; canvasId?: ID
     const layouts = await ctx.workspace.readDoc<StageLayout[]>('stageLayouts', [])
     stageLayout = layouts.find((l) => l.id === canvas.stageLayoutId) ?? layouts[0] ?? null
   }
-  const canvasTheme = canvas.themeId ? ((await ctx.workspace.readDoc<Theme[]>('themes', [])).find((t) => t.id === canvas.themeId) ?? null) : null
+  const canvasTheme = canvas.themeId ? (allThemes(await ctx.workspace.readDoc<Theme[] | null>('themes', null)).find((t) => t.id === canvas.themeId) ?? null) : null
   const regionId = resolved ? resolved.regionId : req.regionId
   const crop = resolved?.crop ?? (regionId ? canvas.regions.find((r) => r.id === regionId)?.rect : undefined)
   const virtual: Output | null = output

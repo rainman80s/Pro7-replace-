@@ -16,6 +16,19 @@ app.commandLine.appendSwitch('disable-renderer-backgrounding')
 app.commandLine.appendSwitch('disable-background-timer-throttling')
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required')
 
+// Never let a stray socket/stream/promise error become Electron's "Uncaught Exception" dialog:
+// log it and tell the operator in a toast instead.
+let lastNotify = 0
+function reportBackgroundError(kind: string, e: unknown): void {
+  const msg = e instanceof Error ? `${(e as NodeJS.ErrnoException).code ? `${(e as NodeJS.ErrnoException).code}: ` : ''}${e.message}` : String(e)
+  console.error(`[reach] ${kind}:`, e)
+  if (Date.now() - lastNotify < 5000) return // a repeating error must not spam toasts
+  lastNotify = Date.now()
+  try { api.emit('ui.notify', { level: 'warning', title: 'A background task had a problem', detail: msg }) } catch { /* nothing else to do */ }
+}
+process.on('uncaughtException', (e) => reportBackgroundError('uncaughtException', e))
+process.on('unhandledRejection', (e) => reportBackgroundError('unhandledRejection', e))
+
 let mainWindow: BrowserWindow | null = null
 const services: Service[] = []
 
@@ -70,7 +83,9 @@ function registerSystemApi(): void {
 async function boot(): Promise<void> {
   local.init()
   await workspace.init()
+  const t0 = Date.now()
   await library.init()
+  console.log(`[library] init ${Date.now() - t0}ms, ${library.summaries().length} presentations listed`)
   api.bindIpc()
   registerSystemApi()
   registerWorkspaceApi()
