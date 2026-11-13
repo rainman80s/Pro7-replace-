@@ -4,6 +4,7 @@ import { PcoCard, ServiceSyncPanel } from './Pco'
 import { NotionCard } from './Notion'
 import { BibleCard } from './BibleCard'
 import { extraCards } from './cards'
+import { EditingGuard } from './Cloud'
 import './integrations.css'
 
 function IntegrationsView(): ReactNode {
@@ -24,5 +25,6 @@ function IntegrationsView(): ReactNode {
 export default defineFeature({
   id: 'integrations',
   views: [{ id: 'integrations', title: 'Integrations', order: 70, component: IntegrationsView }],
+  background: [EditingGuard],
   showPanels: [{ id: 'service-sync', title: 'Planning Center & Notion', order: 15, component: ServiceSyncPanel }]
 })

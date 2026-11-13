@@ -1,3 +1,4 @@
 import type { ComponentType } from 'react'
-/** More cards (cloud workspace, Figma, OBS…) register here. */
-export const extraCards: ComponentType[] = []
+import { CloudCard } from './Cloud'
+/** More cards (Figma, OBS…) register here. */
+export const extraCards: ComponentType[] = [CloudCard]

@@ -72,6 +72,7 @@ class BibleService {
     this.cache.copyright = saved.copyright ?? {}
     await fs.mkdir(this.dir, { recursive: true })
     ctx.workspace.watch(this.dir, () => { this.infos = null; this.files.clear(); ctx.api.emit('bible.changed') })
+    ctx.api.on('bible.changed', () => { this.infos = null })
   }
 
   async settings(): Promise<BibleSettings> {
