@@ -28,14 +28,13 @@ if (process.platform === 'darwin' && !existsSync('/Library/Frameworks/DeckLinkAP
   console.warn('⚠ Blackmagic Desktop Video does not seem to be installed (/Library/Frameworks/DeckLinkAPI.framework is missing).\n  The addon will build, but Reach will say “DeckLink driver not installed” until you install it.')
 }
 
-// gyp/make don't cope with spaces in source paths ("Blackmagic DeckLink SDK 14.4"): go through a space-free symlink.
-let sdkDir = resolve(sdk)
-if (/\s/.test(sdkDir)) {
-  const link = join(root, 'native/decklink/.sdk')
-  try { rmSync(link, { force: true, recursive: false }) } catch { /* not there */ }
-  symlinkSync(sdkDir, link, 'dir')
-  sdkDir = link
-}
+// gyp/make can't take spaces ("Blackmagic DeckLink SDK 16.0") or absolute paths in sources (make builds an
+// object path like obj.target/reach_decklink//Users/... and fails). Always go through a symlink next to
+// binding.gyp and hand gyp the RELATIVE path.
+const link = join(root, 'native/decklink/.sdk')
+try { rmSync(link, { force: true, recursive: false }) } catch { /* not there */ }
+symlinkSync(resolve(sdk), link, 'dir')
+const sdkDir = '.sdk'
 
 const electronVersion = JSON.parse(readFileSync(join(root, 'node_modules/electron/package.json'), 'utf8')).version
 const arch = process.env.npm_config_arch || process.arch
