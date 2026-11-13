@@ -191,6 +191,8 @@ export interface ElementBase {
   cornerRadius?: number
   /** Build order: element appears on the Nth "next" press (0/undefined = with the slide). */
   buildIn?: number
+  /** Set on decoration (shapes, images, fixed text) that came from a theme template, so re-theming replaces it. */
+  fromTheme?: boolean
 }
 
 export interface Shadow {
@@ -246,6 +248,11 @@ export interface TextElement extends ElementBase {
    * {clock}, {timer:ID}, {song.title}, {next.text}, {message} are replaced live.
    */
   dynamic?: boolean
+  /**
+   * Per-canvas variants only: a text element with a `role` shows the text of the base design's element
+   * with the same role (lyrics are typed once). Set `linked: false` to give this copy its own text.
+   */
+  linked?: boolean
 }
 
 export interface ShapeElement extends ElementBase {
@@ -306,6 +313,7 @@ export interface MediaItem extends MediaRef {
   /** Playback defaults. */
   loop?: boolean
   behavior?: 'background' | 'foreground'
+  fit?: 'contain' | 'cover' | 'stretch'
   addedAt?: string
 }
 
@@ -490,6 +498,8 @@ export interface WorkspaceConfig {
   defaultSize: Size
   logo?: MediaRef
   copyright?: { ccliLicense?: string; template?: string; show?: boolean }
+  /** Theme applied to new presentations (see src/shared/themes.ts). */
+  defaultThemeId?: ID
 }
 
 /* ───────────────────────────── Helpers ───────────────────────────── */
@@ -539,7 +549,35 @@ export function resolveSlideForCanvas(
 ): { elements: SlideElement[]; background?: Fill; size: Size } {
   const v = canvas && slide.variants?.[canvas.id]
   if (v && canvas) {
-    return { elements: v.elements, background: v.background ?? slide.background, size: { width: canvas.width, height: canvas.height } }
+    return { elements: linkVariantElements(slide.elements, v.elements), background: v.background ?? slide.background, size: { width: canvas.width, height: canvas.height } }
   }
   return { elements: slide.elements, background: slide.background, size }
+}
+
+/**
+ * Single-source text for per-canvas variants: every variant text element that has a `role`
+ * (and isn't `linked: false` or dynamic) takes its paragraphs from the base design's element with
+ * the same role (k-th of a role ↔ k-th of that role, wrapping). Styling stays the variant's own.
+ * Returns the same array when nothing changes.
+ */
+export function linkVariantElements(base: SlideElement[], variant: SlideElement[]): SlideElement[] {
+  const byRole = new Map<string, TextElement[]>()
+  for (const e of base) {
+    if (e.type === 'text' && e.role && !e.dynamic) byRole.set(e.role, [...(byRole.get(e.role) ?? []), e])
+  }
+  if (!byRole.size) return variant
+  const seen = new Map<string, number>()
+  let changed = false
+  const out = variant.map((e) => {
+    if (e.type !== 'text' || !e.role || e.dynamic || e.linked === false) return e
+    const src = byRole.get(e.role)
+    if (!src) return e
+    const k = seen.get(e.role) ?? 0
+    seen.set(e.role, k + 1)
+    const from = src[k % src.length]
+    if (from.paragraphs === e.paragraphs || JSON.stringify(from.paragraphs) === JSON.stringify(e.paragraphs)) return e
+    changed = true
+    return { ...e, paragraphs: from.paragraphs }
+  })
+  return changed ? out : variant
 }
