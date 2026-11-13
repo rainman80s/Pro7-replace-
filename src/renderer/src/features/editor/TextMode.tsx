@@ -8,6 +8,7 @@ import { applyReflow, parseReflow, presentationToText, splitLongBlocks } from '@
 import { SlideThumb } from '@shared/render/SlideView'
 import { Button } from '@ui/index'
 import { Num } from './controls'
+import { FormatSong } from './FormatSong'
 import { commit, selectSlide, useDoc, useEditor } from './store'
 
 export function TextMode(): ReactNode {
@@ -58,6 +59,7 @@ export function TextMode(): ReactNode {
         <div className="ed-textmode-bar">
           <span className="dim">Blank line = new slide · a line like <b>Chorus</b> or <b>[Tag]</b> starts a section</span>
           <div className="grow" />
+          <FormatSong />
           <label className="row" style={{ gap: 6 }} title="Split long slides automatically">
             <span className="dim">Max lines per slide</span>
             <Num value={maxLines} min={0} max={20} width={54} testid="max-lines" onChange={(v) => { setMaxLines(v); localStorage.setItem('reach.reflow.maxLines', String(v)) }} />
