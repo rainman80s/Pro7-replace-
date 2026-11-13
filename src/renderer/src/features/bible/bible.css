@@ -1,0 +1,16 @@
+.bv { display: grid; grid-template-columns: 380px 1fr; height: 100%; min-height: 0; }
+.bv-side { border-right: 1px solid var(--border); padding: 14px; display: flex; flex-direction: column; gap: 12px; overflow: auto; }
+.bv-main { padding: 14px 18px; display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow: auto; }
+.bv-q { font-size: 20px; padding: 10px 12px; width: 100%; }
+.bv-hint { font-size: 12px; color: var(--text-dim); }
+.bv-hint b { color: var(--mustard); font-weight: 600; }
+.bv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.bv-slide { border: 2px solid transparent; border-radius: 6px; overflow: hidden; cursor: pointer; position: relative; }
+.bv-slide:hover { border-color: var(--border); }
+.bv-slide.live { border-color: var(--mustard); }
+.bv-slide .lbl { position: absolute; left: 6px; bottom: 4px; font: 10px/1 var(--font-label); letter-spacing: .1em; text-transform: uppercase; color: var(--text-dim); text-shadow: 0 1px 2px #000; }
+.bv-verses { font-size: 13px; line-height: 1.5; color: var(--text-dim); max-height: 220px; overflow: auto; }
+.bv-verses sup { color: var(--mustard); margin-right: 3px; }
+.bv-result { padding: 6px 8px; border-radius: 5px; cursor: pointer; font-size: 12px; }
+.bv-result:hover { background: var(--bg-hover); }
+.bv-result b { color: var(--mustard); }

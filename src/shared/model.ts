@@ -344,7 +344,7 @@ export type PlaylistItem =
       people?: string[]
     }
   | { id: ID; type: 'media'; media: MediaRef; title?: string; length?: number }
-  | { id: ID; type: 'placeholder'; title: string; hint?: string; length?: number; notes?: string }
+  | { id: ID; type: 'placeholder'; title: string; hint?: string; length?: number; notes?: string; people?: string[] }
 
 /* ───────────────────────────── Actions ───────────────────────────── */
 
