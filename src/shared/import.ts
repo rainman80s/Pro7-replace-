@@ -114,6 +114,10 @@ export interface SuggestedCanvas {
   from: string
   devices: string[]
   exists?: boolean
+  /** Reach suggests this one first (e.g. a stacked LED wall combining two outputs of one SDI card). */
+  recommended?: boolean
+  /** Why it is suggested, in plain words. */
+  note?: string
 }
 
 export interface ImportReport {

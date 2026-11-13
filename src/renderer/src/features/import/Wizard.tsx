@@ -162,7 +162,7 @@ function Review(p: {
 
 function ReportView({ report, onAgain, onClose }: { report: ImportReport; onAgain(): void; onClose?: () => void }): ReactNode {
   const t = report.totals
-  const [canvases, setCanvases] = useState<string[]>([])
+  const [canvases, setCanvases] = useState<string[]>(() => report.suggestedCanvases.filter((c) => c.recommended && !c.exists).map((c) => c.name))
   const problems = useMemo(() => report.files.filter((f) => f.status === 'failed' || f.status === 'partial' || f.status === 'skipped'), [report])
   const unmapped = Object.entries(report.unmapped).sort((a, b) => b[1] - a[1])
   const saveText = async (): Promise<void> => {
@@ -190,7 +190,7 @@ function ReportView({ report, onAgain, onClose }: { report: ImportReport; onAgai
           <div className="dim" style={{ margin: '6px 0', fontSize: 12 }}>Reach doesn't change your screens automatically. Tick the ones you want as canvases, then route them on the Displays page.</div>
           {report.suggestedCanvases.map((c, i) => (
             <label key={i} className="imp-check"><input type="checkbox" disabled={c.exists} checked={canvases.includes(c.name)} onChange={(e) => setCanvases(e.target.checked ? [...canvases, c.name] : canvases.filter((n) => n !== c.name))} />
-              <b>{c.name}</b> <span className="dim">{c.kind}, {c.width}×{c.height}{c.regions.length ? `, ${c.regions.length} outputs` : ''}{c.exists ? ' — already exists' : ''}</span></label>
+              <b>{c.name}</b>{c.recommended && <span className="imp-tag imported" style={{ marginLeft: 6 }}>Recommended</span>} <span className="dim">{c.kind}, {c.width}×{c.height}{c.regions.length ? `, ${c.regions.length} outputs` : ''}{c.exists ? ' — already exists' : ''}{c.note ? ` — ${c.note}` : ''}</span></label>
           ))}
           <Button size="sm" disabled={!canvases.length} onClick={() => void create()}>Create selected canvases</Button>
         </details>

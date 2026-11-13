@@ -180,6 +180,7 @@ export function suggestCanvases(doc: PB, ctx: ConvertContext): { canvases: Sugge
     })
     canvases.push({ name: s.name || 'Screen', kind: s.screen_type === 'SCREEN_TYPE_STAGE' ? 'stage' : 'audience', width: Math.round(w), height: Math.round(h), regions, from: uuidOf(s.uuid), devices })
   }
+  canvases.push(...suggestStackedCanvases(canvases))
   const LAYER_FLAGS: [string, string][] = [
     ['live_video_enabled', 'video'], ['presentation_background_enabled', 'background'], ['presentation_foreground_enabled', 'slide'],
     ['announcements_enabled', 'announcement'], ['props_layer_enabled', 'props'], ['messages_layer_enabled', 'message'], ['mask_enabled', 'mask']
@@ -199,6 +200,60 @@ export function suggestCanvases(doc: PB, ctx: ConvertContext): { canvases: Sugge
     masks: ((doc.masks ?? []) as PB[]).map((m) => m.name ?? '').filter(Boolean),
     videoInputs: ((doc.videoInputs ?? []) as PB[]).map((v) => `${v.user_description ?? ''} (${v.video_input_device?.type ?? ''} ${v.video_input_device?.name ?? ''})`.trim())
   }
+}
+
+/** "DeckLink Duo (3) · DeckLink Duo 2 · 1080p 29.97" → which card, which port. Undefined when it isn't a DeckLink/UltraStudio output. */
+export function deckLinkCardOf(device: string): { card: string; port?: number } | undefined {
+  const parts = device.split(' · ').map((p) => p.trim()).filter(Boolean)
+  const bm = parts.filter((p) => /decklink|ultrastudio|blackmagic/i.test(p))
+  if (!bm.length) return undefined
+  let port: number | undefined
+  for (const p of bm) {
+    const m = /\((\d+)\)\s*$/.exec(p) ?? /\b(?:port|sdi|output)\s*(\d+)\b/i.exec(p)
+    if (m) { port = Number(m[1]); break }
+  }
+  const card = bm.map((p) => p.replace(/\s*\(\d+\)\s*$/, '').replace(/\s*\b(?:port|sdi|output)\s*\d+\b/i, '').trim().toLowerCase()).sort().join('|')
+  return { card, port }
+}
+
+/** "LED WALL" → "LED Wall": keep short acronyms, title-case the rest of an all-caps name. */
+function tidyName(name: string): string {
+  if (name !== name.toUpperCase()) return name
+  return name.split(/\s+/).map((w) => (w.length <= 3 ? w : w[0] + w.slice(1).toLowerCase())).join(' ')
+}
+
+/**
+ * Two single-output audience screens of the same width on the SAME DeckLink card, each shorter than a full 16:9 frame (e.g. LED WALL 1920×880 on port 1 and
+ * LED LYRICS 1920×320 on port 3 of a Duo 2) are almost always one physical LED wall split across two feeds.
+ * Suggest one stacked canvas with Top/Bottom regions, so slides can be designed across the whole wall.
+ */
+export function suggestStackedCanvases(list: SuggestedCanvas[]): SuggestedCanvas[] {
+  const singles = list
+    // Only strips: a screen using a full 16:9 frame (Key, a projector feed) is its own picture, not part of a split wall.
+    .map((c, order) => ({ c, order, dl: c.kind === 'audience' && c.regions.length === 0 && c.devices.length === 1 && c.height < Math.round((c.width * 9) / 16) ? deckLinkCardOf(c.devices[0]) : undefined }))
+    .filter((x): x is { c: SuggestedCanvas; order: number; dl: { card: string; port?: number } } => !!x.dl)
+  const used = new Set<number>()
+  const out: SuggestedCanvas[] = []
+  for (const a of singles) {
+    if (used.has(a.order)) continue
+    const b = singles.find((x) => x.order !== a.order && !used.has(x.order) && x.c.width === a.c.width && x.dl.card === a.dl.card && x.dl.port !== a.dl.port)
+    if (!b) continue
+    used.add(a.order)
+    used.add(b.order)
+    // Top = the lower port number (the main wall), else the taller one, else import order.
+    const [top, bottom] = [a, b].sort((x, y) => (x.dl.port ?? 99) - (y.dl.port ?? 99) || y.c.height - x.c.height || x.order - y.order)
+    const name = `${tidyName(top.c.name)} (stacked)`
+    out.push({
+      name, kind: 'audience', width: top.c.width, height: top.c.height + bottom.c.height,
+      regions: [
+        { name: 'Top', rect: { x: 0, y: 0, w: top.c.width, h: top.c.height } },
+        { name: 'Bottom', rect: { x: 0, y: top.c.height, w: bottom.c.width, h: bottom.c.height } }
+      ],
+      from: `${top.c.from}+${bottom.c.from}`, devices: [...top.c.devices, ...bottom.c.devices], recommended: true,
+      note: `“${top.c.name}” and “${bottom.c.name}” go out of the same SDI card — design across both as one wall`
+    })
+  }
+  return out
 }
 
 /* ── Communication devices / MIDI → summary doc for the control agent ── */
