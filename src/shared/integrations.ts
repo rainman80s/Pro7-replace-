@@ -138,6 +138,8 @@ export interface PlanPullPreview {
   changes: PlanChange[]
   songs: SongMatch[]
   itemCount: number
+  /** Order of service as it will be pulled. */
+  items: { id: string; title: string; kind: PcoItemKind; length?: number; people?: string[]; key?: string; position?: string }[]
   roles: Record<string, string[]>
   timerSuggestions: { id: string; name: string; target: string; exists: boolean }[]
 }

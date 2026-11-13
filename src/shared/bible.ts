@@ -404,7 +404,7 @@ export function scriptureSlides(pages: VersePage[], passage: Passage, opts: Scri
     const bodyH = par ? 0.36 : 0.66
     const els: TextElement[] = [
       textEl('body', [verseRuns(page.verses, opts.showVerseNumbers ?? true, page.continued)], { x: W * 0.08, y: H * 0.1, w: W * 0.84, h: H * bodyH },
-        { fontFamily: font, fontSize: Math.round(H * 0.062), fontWeight: 500, color: '#FFFFFF', lineHeight: 1.3 }, {}, id)
+        { fontFamily: font, fontSize: Math.round(H * 0.07), fontWeight: 500, color: '#FFFFFF', lineHeight: 1.3 }, {}, id)
     ]
     if (par) els.push(textEl('translation', [verseRuns(par, opts.showVerseNumbers ?? true)], { x: W * 0.08, y: H * 0.48, w: W * 0.84, h: H * 0.3 },
       { fontFamily: font, fontSize: Math.round(H * 0.05), fontWeight: 400, italic: true, color: '#F4F2EB', lineHeight: 1.3 }, { name: `Translation (${parallel!.label})` }, id))

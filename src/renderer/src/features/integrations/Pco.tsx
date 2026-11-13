@@ -167,6 +167,22 @@ export function PlanPullModal({ serviceTypeId, planId, playlistId, onClose }: { 
               )}
             </div>
           )}
+          <div className="ix-plan">
+          <div className="col">
+            <div className="panel-title" style={{ padding: 0 }}>Order of service</div>
+            <div className="ix-list" style={{ maxHeight: 420, overflow: 'auto' }} data-testid="pco-items">
+              {pv.items.map((it) => it.kind === 'header'
+                ? <div key={it.id} className="ix-plan-item hdr"><span /><span>{it.title}</span><span /></div>
+                : (
+                  <div key={it.id} className="ix-plan-item">
+                    <span className="ix-mono">{fmtLen(it.length)}</span>
+                    <span>{it.title}{it.key && <span className="dim"> · {it.key}</span>}{it.people && <span className="dim"> — {it.people.join(', ')}</span>}{it.position && it.position !== 'during' && <span className="dim"> ({it.position}-service)</span>}</span>
+                    <span className={`ix-tag ${it.kind === 'song' ? 'add' : ''}`}>{KIND[it.kind]}</span>
+                  </div>
+                ))}
+            </div>
+          </div>
+          <div className="col" style={{ gap: 14 }}>
           <div className="col">
             <div className="panel-title" style={{ padding: 0 }}>Songs</div>
             <div className="ix-list" data-testid="pco-songs">
@@ -208,11 +224,15 @@ export function PlanPullModal({ serviceTypeId, planId, playlistId, onClose }: { 
               </div>
             </div>
           )}
+          </div>
+          </div>
         </div>
       )}
     </Modal>
   )
 }
+
+const KIND: Record<string, string> = { song: 'Song', sermon: 'Sermon', announcements: 'Announcements', media: 'Media', scripture: 'Scripture', generic: 'Item', header: '' }
 
 /** Panel on the Show screen: Planning Center changes waiting + quick fill from Notion. */
 export function ServiceSyncPanel(): ReactNode {

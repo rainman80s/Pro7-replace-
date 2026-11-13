@@ -2,13 +2,13 @@ import { useEffect, useState, type ReactNode } from 'react'
 import type { IntegrationStatus } from '@shared/integrations'
 import { api } from '../../app/store'
 
-export function StatusLine({ s, okText }: { s?: IntegrationStatus | null; okText?: string }): ReactNode {
+export function StatusLine({ s, okText, offText }: { s?: IntegrationStatus | null; okText?: string; offText?: string }): ReactNode {
   if (!s) return <span className="ix-status"><span className="ix-dot" /> Checking…</span>
   const cls = s.error ? 'err' : s.connected ? 'ok' : ''
   return (
     <span className="ix-status">
       <span className={`ix-dot ${cls}`} />
-      {s.error ? s.error : s.connected ? `${okText ?? 'Connected'}${s.account ? ` — ${s.account}` : ''}` : 'Not connected'}
+      {s.error ? s.error : s.connected ? `${okText ?? 'Connected'}${s.account ? ` — ${s.account}` : ''}` : offText ?? 'Not connected'}
       {s.lastSync && !s.error && <span> · last sync {ago(s.lastSync)}</span>}
     </span>
   )

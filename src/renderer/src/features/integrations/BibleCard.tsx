@@ -34,7 +34,7 @@ export function BibleCard(): ReactNode {
         <Logo text="B" color="#8a5a2b" />
         <div className="grow">
           <div className="ix-title">Bibles</div>
-          <StatusLine s={st} okText="Ready" />
+          <StatusLine s={st} okText="Ready" offText="No Bibles downloaded yet" />
         </div>
       </div>
       <div className="ix-help">Free public-domain Bibles live in the workspace, so every Reach computer has them — and they work offline on Sunday.</div>

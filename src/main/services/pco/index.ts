@@ -107,7 +107,9 @@ export default defineService({
       return {
         plan: summary, playlistId: existing?.id, playlistExists: !!existing, changes: r.changes,
         songs: desired.filter((d) => d.kind === 'song').map((d) => matchSong(d.item, songs, s.songLinks)),
-        itemCount: desired.length, roles: (r.playlist.source as { roles?: Record<string, string[]> }).roles ?? {},
+        itemCount: desired.length,
+        items: desired.map((d) => ({ id: d.item.id, title: d.base.title, kind: d.kind, length: d.base.length, people: d.base.people, key: d.item.keyName, position: d.item.servicePosition })),
+        roles: (r.playlist.source as { roles?: Record<string, string[]> }).roles ?? {},
         timerSuggestions: timerSuggestions(plan, Array.isArray(timers) ? timers : [])
       }
     }
