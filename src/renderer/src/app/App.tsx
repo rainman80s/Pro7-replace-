@@ -5,6 +5,7 @@ import { allBackground, allStatusItems, allToolbar, allViews } from './registry'
 import { api, startSync, useApp } from './store'
 import { toggleLock } from './lock'
 import { StatusItem } from './status'
+import { AboutOverlay, ShortcutsOverlay } from './overlays'
 import './app.css'
 
 /** Default icons for the well-known screens, so the nav looks whole even if a feature forgets one. */
@@ -85,6 +86,8 @@ export function App(): ReactNode {
       </main>
       <StatusStrip />
       {allBackground().map((C, i) => <ErrorBoundary key={i} name="A background helper" fallback={() => null}><C /></ErrorBoundary>)}
+      <ShortcutsOverlay />
+      <AboutOverlay />
       <UIHost />
     </div>
   )
