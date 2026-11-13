@@ -1,8 +1,9 @@
 import { useEffect, type ReactNode } from 'react'
-import { overlayOpen } from '@ui/index'
+import { Icon, overlayOpen } from '@ui/index'
 import { defineFeature } from '../../app/feature'
 import { useApp } from '../../app/store'
 import { advance, clearAll, clearSlide, currentPlaylist, retreat, toggleBlackout, toggleLogo, useShowUi } from './actions'
+import { MediaBin, useBinState } from './MediaBin'
 import { LibraryPanel } from './LibraryPanel'
 import { LivePanel } from './LivePanel'
 import { NewSong } from './NewSong'
@@ -19,13 +20,17 @@ function ShowView(): ReactNode {
   const playlists = useApp((s) => s.playlists)
   const selectedPlaylistId = useApp((s) => s.selectedPlaylistId)
   const playlist = playlists.find((p) => p.id === selectedPlaylistId)
+  const bin = useBinState()
   return (
-    <div className="show" data-testid="show-view">
+    <div className={`show ${bin.open ? 'has-bin' : 'bin-shut'}`} style={{ ['--bin-w' as string]: `${bin.width}px` }} data-testid="show-view">
       <aside className="show-side">
         <ServicePanel />
         <LibraryPanel />
       </aside>
       <SlideGrid playlist={playlist} />
+      {bin.open
+        ? <MediaBin width={bin.width} onWidth={bin.setWidth} onClose={() => bin.setOpen(false)} />
+        : <button type="button" className="bin-rail" data-testid="bin-open" onClick={() => bin.setOpen(true)} aria-label="Show the media bin"><Icon name="chevronLeft" size={14} /><span>Media</span></button>}
       <LivePanel />
     </div>
   )

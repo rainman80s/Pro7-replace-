@@ -4,7 +4,7 @@
 import { createRequire } from 'node:module'
 const require = createRequire(import.meta.url)
 const { _electron: electron } = require('playwright')
-import { mkdtempSync } from 'node:fs'
+import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -245,6 +245,44 @@ try {
   await snap('shortcuts-1440.png')
   await win.keyboard.press('Escape')
   await win.waitForSelector(tid('shortcuts'), { state: 'detached' })
+
+  step('drag a media item from the docked bin onto a slide → slide.background is set')
+  await win.click(tid('nav-show'))
+  const png = join(dir, 'bg.png')
+  writeFileSync(png, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==', 'base64'))
+  await win.evaluate((p) => window.reachBridge.invoke('media.import', { paths: [p] }), png)
+  await win.click(`${tid('service-item')}:has-text("Amazing Grace")`)
+  await win.waitForSelector(tid('bin-item'), { timeout: 8000 })
+  const agId = await win.evaluate(async () => (await window.reachBridge.invoke('library.list')).find((p) => p.title.includes('Amazing Grace')).id)
+  const getPres = () => win.evaluate((id) => window.reachBridge.invoke('library.get', { id }), agId)
+  await win.locator(tid('bin-item')).first().dragTo(win.locator(tid('slide')).nth(1))
+  await win.waitForFunction(async (id) => (await window.reachBridge.invoke('library.get', { id })).slides.some((s) => s.background?.type === 'media'), agId, { timeout: 8000 })
+  const withBg = (await getPres()).slides.filter((s) => s.background?.type === 'media')
+  if (withBg.length !== 1 || withBg[0].background.fit !== 'cover') throw new Error('expected exactly one slide with a media background')
+
+  step('drop media on a group label → every slide in the group')
+  await win.locator(tid('group-head')).first().waitFor()
+  const pre = await getPres()
+  await win.locator(tid('bin-item')).first().dragTo(win.locator(tid('group-head')).first())
+  const g0 = pre.groups[0]
+  await win.waitForFunction(async ([id, ids]) => { const p = await window.reachBridge.invoke('library.get', { id }); return ids.every((i) => p.slides.find((s) => s.id === i)?.background?.type === 'media') }, [agId, g0.slideIds], { timeout: 8000 })
+
+  step('drag a macro onto a slide → macro.run action is added')
+  await win.evaluate(() => window.reachBridge.invoke('macros.save', { macro: { name: 'Walk-in', color: '#3886CE', actions: [] } }))
+  await win.waitForSelector(tid('macro-tile'), { timeout: 8000 })
+  const macroId = await win.evaluate(async () => (await window.reachBridge.invoke('macros.list')).find((m) => m.name === 'Walk-in').id)
+  await win.locator(tid('macro-tile')).first().dragTo(win.locator(tid('slide')).nth(2))
+  await win.waitForFunction(async (id) => (await window.reachBridge.invoke('library.get', { id })).slides.some((s) => s.actions?.some((a) => a.type === 'macro.run')), agId, { timeout: 8000 })
+  const act = (await getPres()).slides.flatMap((s) => s.actions ?? []).find((a) => a.type === 'macro.run')
+  if (act.params?.id !== macroId) throw new Error('macro action should point at the dragged macro')
+  await win.waitForSelector(tid('slide-actions-badge'))
+  await snap('show-bin-1440.png')
+
+  step('right-click a slide → Edit slide opens the editor on that slide')
+  await win.locator(tid('slide')).nth(2).click({ button: 'right' })
+  await win.click(tid('slide-edit'))
+  await win.waitForSelector(tid('stage'), { timeout: 8000 })
+  await win.click(tid('nav-show'))
 
   if (shot) {
     await win.click(`${tid('service-item')}:has-text("Amazing Grace")`)

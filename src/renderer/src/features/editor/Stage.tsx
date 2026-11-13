@@ -276,7 +276,7 @@ export function Stage({ zoom, setZoom }: { zoom: number | 'fit'; setZoom: (z: nu
         onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onDoubleClick={onDoubleClick}>
         <div ref={design} className="ed-design" data-testid="stage" style={{ left, top, width: size.width, height: size.height, transform: `scale(${z})` }}>
           <StillMedia>
-            {inheritedView ?? <SlideView elements={visible} background={surf.background} size={size} tokens={tokens} opaque />}
+            {inheritedView ?? <SlideView elements={visible} background={surf.background} size={size} tokens={tokens} opaque checker />}
             {editing && <TextEditor key={editing.id} el={editing} onChange={(p) => setElementText(editing.id, p)} />}
           </StillMedia>
           {surf.canvas?.regions.map((r) => <RegionGuide key={r.id} region={r} />)}

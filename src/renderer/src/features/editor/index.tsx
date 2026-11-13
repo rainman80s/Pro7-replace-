@@ -25,7 +25,7 @@ import { liveElement, mediaElement, shapeElement, textElement, tokenElement } fr
 import { nudge } from './actions'
 import {
   activeText, addElement, commit, copySelection, copySlides, currentSurface, deleteSelection, deleteSlides, duplicateSelection, duplicateSlides, flushSave,
-  getDoc, layoutList, liveStatus, openDoc, paste, redo, refreshDocs, reorder, resolveConflict, themeList, undo, updateLive, useDoc, useEditor, wireEditor
+  getDoc, layoutList, liveStatus, openDoc, paste, redo, refreshDocs, reorder, resolveConflict, selectSlide, themeList, undo, updateLive, useDoc, useEditor, wireEditor
 } from './store'
 import './editor.css'
 
@@ -44,7 +44,14 @@ function EditorView(): ReactNode {
   // Follow the presentation selected elsewhere (Show screen, library).
   useEffect(() => {
     const id = selectedPresentationId ?? (docId ? null : library[0]?.id)
-    if (id && (id !== useEditor.getState().docId || useEditor.getState().kind !== 'presentation')) void openDoc('presentation', id)
+    const want = useApp.getState().editSlideId
+    const pick = (): void => {
+      if (!want) return
+      useApp.setState({ editSlideId: null })
+      if (getDoc()?.slides.some((x) => x.id === want)) selectSlide(want)
+    }
+    if (id && (id !== useEditor.getState().docId || useEditor.getState().kind !== 'presentation')) void openDoc('presentation', id).then(pick)
+    else pick()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPresentationId])
   useEffect(() => () => void flushSave(), [])

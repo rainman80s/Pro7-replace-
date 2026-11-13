@@ -38,6 +38,8 @@ interface AppState {
   selectedPlaylistId: ID | null
   selectedPlaylistItemId: ID | null
   selectedPresentationId: ID | null
+  /** Slide the editor should select next time it opens a presentation (set by Show's right-click > Edit slide). */
+  editSlideId: ID | null
   /** Cache of opened presentations. */
   presentations: Record<ID, Presentation>
   /**
@@ -70,6 +72,7 @@ export const useApp = create<AppState>((set, get) => ({
   selectedPlaylistId: null,
   selectedPlaylistItemId: null,
   selectedPresentationId: null,
+  editSlideId: null,
   presentations: {},
   locked: false,
   prefs: DEFAULT_PREFS,
@@ -110,7 +113,8 @@ export function setLocked(locked: boolean): void {
 }
 
 /** Open a presentation in the editor / show grid from anywhere. */
-export function openPresentation(id: ID, view?: string): void {
+export function openPresentation(id: ID, view?: string, slideId?: ID): void {
+  useApp.setState({ editSlideId: slideId ?? null })
   useApp.getState().select({ selectedPresentationId: id })
   if (view) useApp.getState().setView(view)
 }

@@ -1,12 +1,18 @@
-import { useEffect, useMemo, useRef, type ReactNode } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { Playlist, PlaylistItem, Presentation } from '@shared/model'
 import { groupOfSlide, orderedSlides, slideText } from '@shared/model'
 import { mediaUrl } from '@shared/media'
+import { MACRO_COLORS, MACRO_MIME } from '@shared/control'
 import { SlideThumb } from '@shared/render/SlideView'
 import { Badge, Button, Empty, Icon, Kbd, Slider, Spinner, Tooltip, openContextMenu } from '@ui/index'
 import { openPresentation, useApp, useLocked } from '../../app/store'
 import { goToSlide, showMedia, useShowUi } from './actions'
 import { formatLength, itemTitle } from './logic'
+import { NotionPull } from './NotionPull'
+import { BackgroundDialog, SlideActionsDialog } from './SlideDialogs'
+import { addMacroAction, setBackground } from './slideOps'
+import { MEDIA_MIME } from './MediaBin'
+import { useRpc } from '../control/hooks'
 
 /** Centre column: the slides of whatever is selected. Clicking a slide puts it on screen. */
 export function SlideGrid({ playlist }: { playlist: Playlist | undefined }): ReactNode {
@@ -20,6 +26,9 @@ export function SlideGrid({ playlist }: { playlist: Playlist | undefined }): Rea
   const loadPresentation = useApp((s) => s.loadPresentation)
   const locked = useLocked()
   const ui = useShowUi()
+  const [macros] = useRpc('macros.list', 'macros')
+  const [over, setOver] = useState<string | null>(null)
+  const [dialog, setDialog] = useState<{ kind: 'actions' | 'background'; slideId: string } | null>(null)
 
   const item: PlaylistItem | undefined = playlist?.items.find((x) => x.id === selectedItemId)
   const presentation: Presentation | undefined = selectedPresentationId ? presentations[selectedPresentationId] : undefined
@@ -48,6 +57,7 @@ export function SlideGrid({ playlist }: { playlist: Playlist | undefined }): Rea
         <Empty title={item.title} icon="placeholder" action={locked ? undefined : <>
           <Button variant="primary" icon="search" onClick={() => ui.openSearch({ kind: 'replace', itemId: item.id })}>Choose from the library</Button>
           <Button icon="music" onClick={() => ui.set({ newSong: { addToService: true } })}>New from pasted text</Button>
+          {playlist && <NotionPull playlist={playlist} item={item} />}
         </>}>
           {item.hint ? `Still to be added: ${item.hint}.` : 'This part of the service has not been prepared yet.'}
           {locked && ' Ask your tech lead.'}
@@ -89,11 +99,37 @@ export function SlideGrid({ playlist }: { playlist: Playlist | undefined }): Rea
   const serviceMeta = item?.type === 'presentation' ? [item.people?.join(', '), formatLength(item.length), item.notes].filter(Boolean).join(' · ') : ''
   let lastGroup: string | undefined
 
+  /** Drop target props: media sets the background, macros add an action. `macroTo` overrides where a macro lands (the title only targets the first slide). */
+  const dz = (key: string, slideIds: string[], scope: string, macroTo?: { ids: string[]; scope: string; detail: string }) => locked ? {} : {
+    onDragOver: (e: React.DragEvent) => {
+      const t = e.dataTransfer.types
+      if (!t.includes(MEDIA_MIME) && !t.includes(MACRO_MIME)) return
+      e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'copy'; setOver(key)
+    },
+    onDragLeave: (e: React.DragEvent) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOver((o) => (o === key ? null : o)) },
+    onDrop: (e: React.DragEvent) => {
+      setOver(null)
+      const media = e.dataTransfer.getData(MEDIA_MIME)
+      const macro = e.dataTransfer.getData(MACRO_MIME)
+      if (!media && !macro) return
+      e.preventDefault(); e.stopPropagation()
+      try {
+        if (macro) { const m = JSON.parse(macro) as { id: string; name: string }; void addMacroAction(presentation.id, macroTo?.ids ?? slideIds, m.id, m.name, macroTo?.scope ?? scope, macroTo?.detail) }
+        else void setBackground(presentation.id, slideIds, JSON.parse(media), scope)
+      } catch { /* not ours */ }
+    }
+  }
+  const allIds = presentation.slides.map((x) => x.id)
+  const macroOf = (id: unknown): { color: string; name: string } => {
+    const m = macros?.find((x) => x.id === id)
+    return { color: m?.color ?? MACRO_COLORS[0], name: m?.name ?? 'Macro' }
+  }
+
   return (
     <section className="grid-col">
       <header className="grid-head">
         <div className="grid-title-wrap">
-          <h2 className="grid-title truncate" data-testid="grid-title">{item ? itemTitle(item, library) : presentation.title}</h2>
+          <h2 className={`grid-title truncate drop ${over === 'title' ? 'over' : ''}`} data-testid="grid-title" title={locked ? undefined : 'Drop media here for every slide, or a macro for the first slide'} {...dz('title', allIds, 'every slide', { ids: allIds.slice(0, 1), scope: 'the first slide', detail: 'Dropped on the title, so it runs when the song starts' })}>{item ? itemTitle(item, library) : presentation.title}</h2>
           <div className="t-meta truncate">{meta}{!item && ' · not in this service'}</div>
           {serviceMeta && <div className="grid-note truncate"><Icon name="note" size={13} />{serviceMeta}</div>}
         </div>
@@ -112,28 +148,53 @@ export function SlideGrid({ playlist }: { playlist: Playlist | undefined }): Rea
           const isNext = i === nextIndex
           const label = s.label || g?.name || ''
           return (
-            <button key={`${s.id}-${i}`} type="button" data-index={i} data-testid="slide"
-              className={`slide ${isLive ? 'live' : ''} ${isNext ? 'next' : ''}`} style={{ ['--group' as string]: g?.color ?? 'var(--border-strong)' }}
+            <Fragment key={`${s.id}-${i}`}>
+            {startsGroup && g && (
+              <div className={`slide-group-head drop ${over === `g:${g.id}:${i}` ? 'over' : ''}`} data-testid="group-head" style={{ ['--group' as string]: g.color ?? 'var(--border-strong)' }}
+                {...dz(`g:${g.id}:${i}`, g.slideIds, `every slide in ${g.name}`)}>
+                <span className="slide-group-dot" /><span className="truncate">{g.name}</span><span className="faint">{g.slideIds.length}</span>
+              </div>
+            )}
+            <button type="button" data-index={i} data-testid="slide"
+              className={`slide drop ${isLive ? 'live' : ''} ${isNext ? 'next' : ''} ${over === `s:${s.id}:${i}` ? 'over' : ''}`} {...dz(`s:${s.id}:${i}`, [s.id], 'this slide')} style={{ ['--group' as string]: g?.color ?? 'var(--border-strong)' }}
               aria-label={`Slide ${i + 1}${label ? `, ${label}` : ''}: ${slideText(s).replace(/\n/g, ' / ') || 'no text'}${isLive ? ' (on screen now)' : ''}`} aria-pressed={isLive}
               onClick={() => void goToSlide(presentation.id, i, { playlistId: playlist?.id, itemId: item?.id })}
               onContextMenu={(e) => openContextMenu(e, [
                 { label: 'Show this slide', icon: 'play', onSelect: () => void goToSlide(presentation.id, i, { playlistId: playlist?.id, itemId: item?.id }) },
-                locked ? null : { label: 'Edit slides', icon: 'edit', onSelect: () => openPresentation(presentation.id, 'edit') }
+                locked ? null : { label: 'Edit slide', icon: 'edit', onSelect: () => openPresentation(presentation.id, 'edit', s.id), testId: 'slide-edit' },
+                locked ? null : { label: 'Edit all slides', icon: 'edit', onSelect: () => openPresentation(presentation.id, 'edit') },
+                locked ? null : { type: 'separator' },
+                locked ? null : { label: 'Slide actions…', icon: 'sparkle', onSelect: () => setDialog({ kind: 'actions', slideId: s.id }), testId: 'slide-actions' },
+                locked ? null : { label: 'Set background…', icon: 'image', onSelect: () => setDialog({ kind: 'background', slideId: s.id }), testId: 'slide-set-bg' },
+                locked || !s.background ? null : { label: 'Clear background', icon: 'close', onSelect: () => void setBackground(presentation.id, [s.id], undefined, 'this slide'), testId: 'slide-clear-bg' }
               ])}>
               <span className="slide-frame">
-                <SlideThumb elements={s.elements} background={s.background} size={presentation.size} />
+                <SlideThumb checker elements={s.elements} background={s.background} size={presentation.size} />
                 {isLive && <Badge tone="live" className="slide-flag">Live</Badge>}
                 {isNext && <Badge tone="outline" className="slide-flag">Next</Badge>}
               </span>
               <span className="slide-label">
                 <span className="slide-num">{i + 1}</span>
                 <span className={`slide-group truncate ${startsGroup ? 'first' : ''}`}>{label}</span>
+                {!!s.notes?.trim() && <Tooltip label={s.notes}><span className="slide-note" data-testid="slide-note"><Icon name="note" size={12} /></span></Tooltip>}
+                {!!s.actions?.length && (
+                  <Tooltip label={s.actions.map((a) => (a.type === 'macro.run' ? `Macro: ${macroOf(a.params?.id).name}` : a.label || a.type)).join(', ')}>
+                    <span className="slide-acts" data-testid="slide-actions-badge">
+                      {s.actions.slice(0, 3).map((a) => <span key={a.id} className="slide-act-dot" style={{ background: a.type === 'macro.run' ? macroOf(a.params?.id).color : 'var(--text-faint)' }} />)}
+                      {s.actions.length > 3 && <span className="slide-act-more">+{s.actions.length - 3}</span>}
+                    </span>
+                  </Tooltip>
+                )}
                 {!!s.autoAdvance && <Tooltip label={`Moves on by itself after ${s.autoAdvance}s`}><span className="slide-auto"><Icon name="clock" size={12} /></span></Tooltip>}
               </span>
             </button>
+            </Fragment>
           )
         })}
       </div>
+
+      {dialog?.kind === 'actions' && presentation.slides.find((x) => x.id === dialog.slideId) && <SlideActionsDialog presentation={presentation} slide={presentation.slides.find((x) => x.id === dialog.slideId)!} onClose={() => setDialog(null)} />}
+      {dialog?.kind === 'background' && <BackgroundDialog presentationId={presentation.id} slideIds={[dialog.slideId]} scope="this slide" onClose={() => setDialog(null)} />}
 
       <footer className="grid-hint" data-testid="advance-hint">
         <span><strong>Click a slide</strong> to put it on the screens</span>

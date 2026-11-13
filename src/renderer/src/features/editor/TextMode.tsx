@@ -92,7 +92,7 @@ function Preview(): ReactNode {
             {head && <div className="ed-film-group" style={{ ['--group' as string]: head.color ?? '#555' }}>{head.name}</div>}
             <button className={`ed-textmode-thumb ${s.id === slideId ? 'on' : ''}`} onClick={() => selectSlide(s.id)}>
               <span className="ed-film-n">{i + 1}</span>
-              <SlideThumb elements={s.elements} background={s.background} size={doc.size} />
+              <SlideThumb checker elements={s.elements} background={s.background} size={doc.size} />
             </button>
           </div>
         )

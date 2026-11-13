@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
-import { DAY_NAMES, MACRO_COLORS, keyName, uid, type Trigger, type TriggerWhen } from '@shared/control'
+import { DAY_NAMES, MACRO_COLORS, MACRO_MIME, keyName, uid, type Trigger, type TriggerWhen } from '@shared/control'
 import type { Macro, SlideAction } from '@shared/model'
-import { Button, Field, Input, Modal, Select, toast } from '@ui/index'
+import { Button, Field, Icon, Input, Modal, Select, iconNames, toast, type IconName } from '@ui/index'
 import { api } from '../../app/store'
 import { ActionPicker, ActionSummary, type PickedAction } from './ActionPicker'
 import { attempt, useRpc } from './hooks'
@@ -59,8 +59,12 @@ export function MacrosPanel(): ReactNode {
     <div className="ctl-panel">
       <div className="ctl-macros">
         {list?.map((m) => (
-          <button key={m.id} className="ctl-macro" style={{ ['--c' as string]: m.color ?? MACRO_COLORS[0] }} title="Click to run · right-click to edit"
-            onClick={() => void attempt(api.invoke('live.runMacro', { id: m.id }), toast)} onContextMenu={(e) => { e.preventDefault(); setEdit(m) }}>{m.name}</button>
+          <button key={m.id} className="ctl-macro" data-testid="macro-tile" draggable style={{ ['--c' as string]: m.color ?? MACRO_COLORS[0] }} title="Click to run · drag onto a slide to run it when that slide goes live · right-click to edit"
+            onDragStart={(e) => { e.dataTransfer.setData(MACRO_MIME, JSON.stringify({ id: m.id, name: m.name })); e.dataTransfer.effectAllowed = 'copy' }}
+            onClick={() => void attempt(api.invoke('live.runMacro', { id: m.id }), toast)} onContextMenu={(e) => { e.preventDefault(); setEdit(m) }}>
+            {m.icon && (iconNames as readonly string[]).includes(m.icon) && <Icon name={m.icon as IconName} size={22} />}
+            <span className="ctl-macro-name">{m.name}</span>
+          </button>
         ))}
       </div>
       {list && !list.length && <div className="ctl-empty">Macros do several things with one click — e.g. clear the screen, start the countdown and play walk-in music.</div>}
