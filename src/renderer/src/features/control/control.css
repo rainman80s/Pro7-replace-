@@ -52,3 +52,9 @@
 .ctl-macro { background: var(--c, var(--lakeside)); }
 .ctl-msg-name { flex: 1; background: none; border: 0; color: var(--text); text-align: left; cursor: pointer; font: 600 13px var(--font-ui); padding: 0; }
 .ctl-msg.on .ctl-msg-name { color: var(--mustard); }
+.ctl-proplist { display: flex; flex-direction: column; gap: 4px; max-height: 260px; overflow-y: auto; }
+.ctl-proprow { display: flex; align-items: center; gap: 10px; height: 44px; flex: none; padding: 0 8px 0 4px; border-radius: var(--radius-sm); border: 1px solid var(--border-soft); background: var(--bg-sunken); }
+.ctl-proprow.on { border-color: color-mix(in srgb, var(--live) 60%, transparent); background: var(--live-soft); }
+.ctl-propthumb { width: 56px; height: 32px; flex: none; border-radius: 3px; overflow: hidden; display: block; }
+.ctl-propthumb > div { height: 100%; }
+.ctl-propname { flex: 1; min-width: 0; font-size: 13px; }

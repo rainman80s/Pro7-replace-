@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { imageProp, textProp, type PropDef } from '@shared/control'
 import { SlideThumb } from '@shared/render/SlideView'
-import { Button, Field, Input, Modal, Select, toast } from '@ui/index'
+import { Button, Field, Input, Modal, Select, Toggle, toast } from '@ui/index'
 import { api, useLive, useWorkspace } from '../../app/store'
 import { attempt, useRpc } from './hooks'
 
@@ -63,13 +63,14 @@ export function PropsPanel(): ReactNode {
   }
   return (
     <div className="ctl-panel">
-      <div className="ctl-props">
+      <div className="ctl-proplist scroll" data-testid="props-list">
         {doc?.props.map((p) => (
-          <button key={p.id} className={`ctl-prop ${on.has(p.id) ? 'on' : ''}`} onClick={() => void attempt(api.invoke('props.toggle', { id: p.id }), toast)}
-            onContextMenu={(e) => { e.preventDefault(); if (confirm(`Delete the prop "${p.name}"?`)) void api.invoke('props.remove', { id: p.id }) }} title="Click to show / hide · right-click to delete">
-            <SlideThumb elements={p.slide.elements} background={p.slide.background} size={p.size} />
-            <span>{p.name}</span>
-          </button>
+          <div key={p.id} className={`ctl-proprow ${on.has(p.id) ? 'on' : ''}`} data-testid="prop-row" title="Right-click to delete"
+            onContextMenu={(e) => { e.preventDefault(); if (confirm(`Delete the prop "${p.name}"?`)) void api.invoke('props.remove', { id: p.id }) }}>
+            <span className="ctl-propthumb"><SlideThumb checker elements={p.slide.elements} background={p.slide.background} size={p.size} /></span>
+            <span className="ctl-propname truncate">{p.name}</span>
+            <Toggle checked={on.has(p.id)} aria-label={`Show ${p.name}`} data-testid="prop-toggle" onChange={() => void attempt(api.invoke('props.toggle', { id: p.id }), toast)} />
+          </div>
         ))}
       </div>
       {doc && !doc.props.length && <div className="ctl-empty">Props are overlays that stay up while slides change — a logo, a name lower third.</div>}
