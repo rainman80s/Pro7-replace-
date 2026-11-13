@@ -70,7 +70,9 @@ function registerSystemApi(): void {
 async function boot(): Promise<void> {
   local.init()
   await workspace.init()
+  const t0 = Date.now()
   await library.init()
+  console.log(`[library] init ${Date.now() - t0}ms, ${library.summaries().length} presentations listed`)
   api.bindIpc()
   registerSystemApi()
   registerWorkspaceApi()

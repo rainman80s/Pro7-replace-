@@ -4,7 +4,7 @@ import { newId } from './files'
 
 /** First-run sample content so the app is never empty (public-domain hymns). */
 export async function seedIfEmpty(): Promise<void> {
-  if (library.all().length || process.env.REACH_NO_SEED) return
+  if (process.env.REACH_NO_SEED || !(await library.isEmpty())) return
   const grace = await library.create('Amazing Grace', 'song', `Verse 1
 Amazing grace how sweet the sound
 That saved a wretch like me
