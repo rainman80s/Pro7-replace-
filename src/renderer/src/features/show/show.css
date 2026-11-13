@@ -64,9 +64,9 @@
 .thumb-size { display: inline-flex; align-items: center; gap: 6px; color: var(--text-faint); padding: 0 6px; }
 
 .slides { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--thumb, 220px), 1fr)); gap: 14px; padding: 16px 20px 24px; align-content: start; }
-.slide { position: relative; display: flex; flex-direction: column; padding: 0; border: 0; border-radius: 9px; background: var(--bg-raised); cursor: pointer; text-align: left; box-shadow: 0 0 0 1px var(--border-soft); transition: box-shadow .12s var(--ease), transform .12s var(--ease); }
-.slide:hover { box-shadow: 0 0 0 1px var(--border-strong), 0 6px 18px rgba(0, 0, 0, .35); }
-.slide:active { transform: scale(.99); }
+.slide { position: relative; display: flex; flex-direction: column; padding: 0; border: 0; border-radius: 9px; background: var(--bg-raised); cursor: pointer; text-align: left; box-shadow: var(--hl), 0 0 0 1px var(--border-soft), var(--shadow-1); transition: box-shadow .12s var(--ease), transform .12s var(--ease); }
+.slide:hover { transform: translateY(-2px); box-shadow: var(--hl), 0 0 0 1px var(--border-strong), var(--shadow-2); }
+.slide:active { transform: translateY(0) scale(.99); }
 .slide:focus-visible { outline: 2px dashed var(--text-faint); outline-offset: 3px; }
 .slide-frame { position: relative; display: block; border-radius: 9px 9px 0 0; overflow: hidden; background: #000; }
 .slide-flag { position: absolute; top: 8px; left: 8px; }
@@ -76,10 +76,11 @@
 .slide-group { color: var(--text-dim); flex: 1; }
 .slide-group:not(.first) { opacity: .55; }
 .slide-auto { color: var(--text-faint); display: inline-grid; }
-.slide.live { box-shadow: 0 0 0 3px var(--live), 0 8px 28px rgba(230, 162, 15, .18); }
+.slide.live { box-shadow: 0 0 0 3px var(--live), var(--shadow-2), 0 8px 28px rgba(230, 162, 15, .16); }
 .slide.live .slide-label { background: var(--live-soft); }
 .slide.live .slide-num, .slide.live .slide-group { color: var(--text); opacity: 1; }
-.slide.next { box-shadow: 0 0 0 1px var(--border-strong), 0 0 0 3px rgba(244, 242, 235, .14); }
+.slide.next { box-shadow: var(--hl), 0 0 0 1px var(--border-strong), 0 0 0 3px rgba(244, 242, 235, .14), var(--shadow-1); }
+.grid-col { box-shadow: inset 0 2px 6px rgba(0, 0, 0, .22); }
 
 .grid-hint { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; padding: 9px 20px; border-top: 1px solid var(--border-soft); background: var(--bg); color: var(--text-faint); font-size: 12px; }
 .grid-hint strong { color: var(--text-dim); font-weight: 500; }

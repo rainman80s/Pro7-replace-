@@ -210,3 +210,16 @@
 .crash.compact { padding: 10px; } .crash.compact .crash-card { padding: 12px; border-radius: var(--radius); }
 .crash.compact h3 { font: 600 13px/1.3 var(--font-ui); }
 .modal:focus-visible, .drawer:focus-visible, .menu:focus-visible, .wel:focus-visible { outline: none; }
+
+/* ───────────── Depth ─────────────
+ * Raised surfaces sit a step lighter than the app background, carry a hairline highlight on
+ * their top edge, and cast a soft two-layer shadow. Wells (inputs, the slide grid) stay recessed. */
+.panel, .onair, .clear-btn { box-shadow: var(--hl), var(--shadow-1); }
+.onair.is-on { box-shadow: var(--hl), var(--shadow-1), 0 0 0 1px color-mix(in srgb, var(--live) 25%, transparent); }
+.modal, .drawer { box-shadow: var(--shadow-pop); }
+.menu, .toast { box-shadow: var(--shadow-pop); }
+.btn:not(.ghost):not(.primary):not(.live):not(.danger):not(:disabled) { box-shadow: var(--hl); }
+.bin-item, .mb-item { transition: transform .12s var(--ease), box-shadow .12s var(--ease), border-color .12s var(--ease); }
+.bin-item:hover, .mb-item:hover { transform: translateY(-1px); box-shadow: var(--shadow-1); }
+.ctl-macro { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 1px 2px rgba(0, 0, 0, .3), 0 4px 10px rgba(0, 0, 0, .22); }
+@media (prefers-reduced-motion: reduce) { .slide:hover, .bin-item:hover, .mb-item:hover { transform: none; } }
