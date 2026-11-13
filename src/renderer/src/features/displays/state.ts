@@ -3,6 +3,7 @@ import { create } from 'zustand'
 import type { ReceiverInfo } from '@shared/api'
 import type { Canvas, ID, Output } from '@shared/model'
 import type { AudioRoute, DiscoveryState, NdiStatus, OutputHealth } from '@shared/outputs'
+import type { DeckLinkDevice, DeckLinkStatus } from '@shared/decklink'
 import { api, useApp } from '../../app/store'
 
 interface DisplaysState {
@@ -12,6 +13,9 @@ interface DisplaysState {
   safeMode: { on: boolean; shortcut: string }
   audio: AudioRoute
   ndi: NdiStatus | null
+  decklink: DeckLinkStatus | null
+  /** DeckLink SDI ports on this computer (connected + remembered). */
+  ports: DeckLinkDevice[]
   /** UI selection. */
   selectedOutputId: ID | null
   selectedCanvasId: ID | null
@@ -25,6 +29,8 @@ export const useDisplays = create<DisplaysState>((set) => ({
   safeMode: { on: false, shortcut: '' },
   audio: { device: 'operator' },
   ndi: null,
+  decklink: null,
+  ports: [],
   selectedOutputId: null,
   selectedCanvasId: null,
   select: (p) => set(p)
@@ -48,6 +54,19 @@ export function startDisplaysSync(): void {
   safe(api.invoke('outputs.safeMode'), (safeMode) => set({ safeMode }))
   safe(api.invoke('outputs.audioRoute'), (audio) => set({ audio }))
   safe(api.invoke('outputs.ndiStatus'), (ndi) => set({ ndi }))
+  api.on('decklink.devicesChanged', (ports) => { set({ ports }); refreshDeckLinkStatus() })
+  api.on('outputs.healthChanged', () => refreshDeckLinkStatus())
+  safe(api.invoke('decklink.devices'), (ports) => set({ ports }))
+  refreshDeckLinkStatus()
+}
+
+export function refreshDeckLinkStatus(): void {
+  void api.invoke('decklink.status').then((decklink) => useDisplays.setState({ decklink })).catch(() => {})
+}
+
+/** Re-scan the DeckLink hardware ("Check again"). */
+export function rescanDeckLink(): Promise<void> {
+  return api.invoke('decklink.devices', { refresh: true }).then((ports) => { useDisplays.setState({ ports }); refreshDeckLinkStatus() }).catch(() => {})
 }
 
 /** Save the whole canvases list (synced workspace). */

@@ -65,7 +65,7 @@ function SafeModeButton(): ReactNode {
 }
 
 function SoundAndSafety(): ReactNode {
-  const { audio, safeMode, ndi } = useDisplays()
+  const { audio, safeMode, ndi, decklink } = useDisplays()
   const outputs = useApp((s) => s.outputs)
   const value = audio.device === 'output' ? `o:${audio.outputId}` : audio.device
   return (
@@ -81,7 +81,7 @@ function SoundAndSafety(): ReactNode {
             }}>
               <option value="operator">This computer (the operator window)</option>
               <optgroup label="An output (e.g. a TV with speakers, an HDMI audio embedder)">
-                {outputs.filter((o) => o.target.type !== 'ndi').map((o) => <option key={o.id} value={`o:${o.id}`}>{o.name}{isGroup(o) ? ' (first screen in group)' : ''}</option>)}
+                {outputs.filter((o) => o.target.type !== 'ndi' && o.target.type !== 'decklink').map((o) => <option key={o.id} value={`o:${o.id}`}>{o.name}{isGroup(o) ? ' (first screen in group)' : ''}</option>)}
               </optgroup>
               <option value="none">Nowhere (muted)</option>
             </Select>
@@ -98,6 +98,12 @@ function SoundAndSafety(): ReactNode {
         <div className="col" style={{ padding: 12, gap: 6 }}>
           {ndi?.available ? <span>NDI is ready{ndi.version ? ` (${ndi.version})` : ''}. Add an NDI output under “Where things show”.</span> : <span className="dsp-warn info">{ndi?.reason ?? 'Checking…'}</span>}
           {ndi?.senders.map((s) => <span key={s.outputId} className="dim">{s.name}: {s.fps} fps, {s.frames} frames sent{s.dropped ? `, ${s.dropped} skipped` : ''}</span>)}
+        </div>
+      </Panel>
+      <Panel title="SDI (Blackmagic DeckLink)">
+        <div className="col" style={{ padding: 12, gap: 6 }} data-decklink-status>
+          {decklink?.available ? <span>{decklink.message}</span> : <span className="dsp-warn info">{decklink?.message ?? 'Checking…'}</span>}
+          {decklink?.outputs.map((s) => <span key={s.outputId} className="dim">{s.name} → {s.device}: {s.problem ?? `${s.fps} fps from Reach, ${s.fresh} new frames${s.late || s.dropped ? `, ${s.late + s.dropped} late` : ''}`}</span>)}
         </div>
       </Panel>
     </div>

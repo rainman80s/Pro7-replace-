@@ -146,6 +146,6 @@ export function deckLinkRate(m: Pick<DeckLinkMode, 'fps' | 'frameDuration' | 'ti
 
 export const KEYING_LABELS: Record<DeckLinkKeying, string> = {
   none: 'Picture only',
-  external: 'Fill + key to the switcher (uses the paired SDI port for the key)',
-  internal: 'Key over the card’s own SDI input'
+  external: 'Fill + key (for a switcher)',
+  internal: 'Keyed over the card’s input'
 }

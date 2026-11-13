@@ -6,7 +6,8 @@ import { OutputSurface } from '@shared/render/LiveCanvas'
 import { Button, Panel, Select, toast } from '@ui/index'
 import { api, useApp } from '../../app/store'
 import { Inspector } from './Inspector'
-import { newLocalId, removeOutput, saveOutput, useCanvases, useDisplays } from './state'
+import { newLocalId, removeOutput, rescanDeckLink, saveOutput, useCanvases, useDisplays } from './state'
+import { defaultDeckLinkMode, deckLinkModeLabel, type DeckLinkDevice } from '@shared/decklink'
 
 /* ───────── helpers ───────── */
 
@@ -37,7 +38,7 @@ const statusClass = (h?: OutputHealth): string => (!h ? 'idle' : h.status === 'l
 
 function useThumbnail(output: Output | undefined, health?: OutputHealth): string | null {
   const [src, setSrc] = useState<string | null>(null)
-  const local = output && (output.target.type === 'display' || output.target.type === 'window' || output.target.type === 'ndi')
+  const local = output && (output.target.type === 'display' || output.target.type === 'window' || output.target.type === 'ndi' || output.target.type === 'decklink')
   const live = health?.status === 'live'
   useEffect(() => {
     if (!output || !local || !live) { setSrc(null); return }
@@ -56,7 +57,7 @@ export function RoutingView(): ReactNode {
   const canvases = useCanvases()
   const outputs = useApp((s) => s.outputs)
   const displays = useApp((s) => s.displays)
-  const { receivers, health, selectedOutputId, select } = useDisplays()
+  const { receivers, health, selectedOutputId, select, ports, decklink } = useDisplays()
   const [dragSrc, setDragSrc] = useState<string | null>(null)
   const healthOf = (id: ID): OutputHealth | undefined => health.find((h) => h.outputId === id)
   const groupOf = useMemo(() => {
@@ -82,6 +83,18 @@ export function RoutingView(): ReactNode {
     void api.invoke('receivers.assign', { id: r.id, canvasId: s?.canvasId ?? null, regionId: s?.regionId })
   }
   const assignOutput = (o: Output, key: string): void => void saveOutput({ ...o, ...parseSrc(key) })
+  const outputForPort = (d: DeckLinkDevice): Output | undefined => outputs.find((o) => o.target.type === 'decklink' && o.target.device === d.key)
+  const assignPort = (d: DeckLinkDevice, key: string | null): void => {
+    const existing = outputForPort(d)
+    if (!key) { if (existing) void removeOutput(existing.id); return }
+    const s = parseSrc(key)
+    if (existing) { void saveOutput({ ...existing, ...s, enabled: true }); return }
+    const mode = defaultDeckLinkMode(d.modes)
+    void saveOutput({ id: newLocalId(), name: `SDI ${d.port}${d.name.includes('Duo') ? '' : ` (${d.name})`}`, ...s, target: { type: 'decklink', device: d.key, mode: mode?.id ?? 'Hp29', keying: 'none' }, enabled: true }).then((list) => {
+      const o = list.find((x) => x.target.type === 'decklink' && x.target.device === d.key)
+      if (o) select({ selectedOutputId: o.id })
+    })
+  }
 
   const addWindow = (): void => void saveOutput({ id: newLocalId(), name: 'Preview window', canvasId: canvases[0]?.id ?? 'main', target: { type: 'window' }, enabled: true })
   const addNdi = (): void => {
@@ -144,6 +157,23 @@ export function RoutingView(): ReactNode {
           </div>
         </Panel>
 
+        <Panel title="SDI outputs (Blackmagic DeckLink)" actions={<Button size="sm" variant="ghost" onClick={() => void rescanDeckLink()} data-decklink-rescan>Check again</Button>}>
+          <div className="dsp-dest-grid" data-decklink-panel>
+            {!ports.length && <div className="dim dsp-help" style={{ padding: 12 }}>{decklink && !decklink.available ? decklink.message : 'No SDI card found on this computer. A DeckLink card’s ports show here, each one like a display: pick what it shows.'}</div>}
+            {ports.map((d) => {
+              const o = outputForPort(d)
+              const mode = o?.target.type === 'decklink' ? d.modes.find((m) => m.id === (o.target as { mode: string }).mode) : undefined
+              const keying = o?.target.type === 'decklink' ? o.target.keying ?? 'none' : 'none'
+              return (
+                <DestCard key={d.key} kind="decklink" title={d.key} subtitle={`${mode ? deckLinkModeLabel(mode) : d.displayName}${keying === 'external' ? ' · fill + key' : keying === 'internal' ? ' · keyed on card' : ''}${d.connected ? '' : ' · not connected'}`}
+                  output={o} group={o && groupOf.get(o.id)} health={o && healthOf(o.id)} canvases={canvases} selected={!!o && o.id === selectedOutputId}
+                  onPick={(k) => assignPort(d, k)} onSelect={() => o && select({ selectedOutputId: o.id })}
+                  drop={drop((k) => assignPort(d, k))} dim={!d.connected} emptyHint="Not used yet." data-decklink={d.key} />
+              )
+            })}
+          </div>
+        </Panel>
+
         <Panel title="Groups" actions={<Button size="sm" onClick={addGroup} data-add-group>+ New group</Button>}>
           <div className="dsp-dest-grid">
             {!groups.length && <div className="dim dsp-help" style={{ padding: 12 }}>A group treats several displays as one: they all show the same thing (e.g. three lobby TVs), or one picture split across them (a video wall). Switch them on and off together.</div>}
@@ -185,7 +215,7 @@ function SourceChip({ canvas, label, sub, k, onDrag, big }: { canvas: Canvas; la
 type DropProps = { onDragOver: (e: DragEvent) => void; onDrop: (e: DragEvent) => void }
 
 function DestCard(p: {
-  kind: 'display' | 'network' | 'group' | 'window' | 'ndi'; title: string; subtitle: string; output?: Output; group?: Output; health?: OutputHealth; canvases: Canvas[]
+  kind: 'display' | 'network' | 'group' | 'window' | 'ndi' | 'decklink'; title: string; subtitle: string; output?: Output; group?: Output; health?: OutputHealth; canvases: Canvas[]
   selected: boolean; destSize?: { width: number; height: number }; onPick: (k: string | null) => void; onSelect: () => void; drop: DropProps; dim?: boolean; emptyHint?: string; [k: `data-${string}`]: string
 }): ReactNode {
   const { output, group, health, canvases } = p
@@ -209,7 +239,7 @@ function DestCard(p: {
           <div className="dsp-dest-title">{p.title}</div>
           <div className="dim dsp-dest-sub">{p.subtitle}</div>
         </div>
-        <span className="dsp-kind">{({ display: 'Display', network: 'Network', group: 'Group', window: 'Window', ndi: 'NDI' })[p.kind]}</span>
+        <span className="dsp-kind">{({ display: 'Display', network: 'Network', group: 'Group', window: 'Window', ndi: 'NDI', decklink: 'SDI' })[p.kind]}</span>
       </div>
       <div className="dsp-thumb">
         {thumb ? <img src={thumb} alt="" /> : output && canvas && resolved?.crop && output.enabled

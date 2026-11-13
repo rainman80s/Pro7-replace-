@@ -45,7 +45,8 @@ export interface FakeDeckLink extends NativeDeckLink {
   driverInstalled: boolean
 }
 
-export function createFakeDeckLink(devices: DeckLinkNativeDevice[] = fakeChurchDevices()): FakeDeckLink {
+/** autoTick: run each handle's SDI clock on a real timer (REACH_FAKE_DECKLINK=1); tests tick by hand. */
+export function createFakeDeckLink(devices: DeckLinkNativeDevice[] = fakeChurchDevices(), autoTick = false): FakeDeckLink {
   const fake: FakeDeckLink = {
     devices, busy: new Set(), handles: [], driverInstalled: true, apiVersion: 'fake',
     driverVersion: () => (fake.driverInstalled ? 'fake 0.0' : null),
@@ -79,8 +80,10 @@ export function createFakeDeckLink(devices: DeckLinkNativeDevice[] = fakeChurchD
           return shown ? 'repeat' : 'black'
         },
         stats: () => ({ ...stats }),
-        async close() { h.closed = true }
+        async close() { h.closed = true; if (timer) clearInterval(timer) }
       }
+      const timer = autoTick ? setInterval(() => h.tick(), 1000 / m.fps) : null
+      timer?.unref?.()
       fake.handles.push(h)
       return h
     }

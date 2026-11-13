@@ -74,7 +74,7 @@ function classify(lib: NativeDeckLink, path?: string): DeckLinkLoad {
 export function loadDeckLink(): DeckLinkLoad {
   if (cached) return cached
   if (override !== undefined) return (cached = override ? classify(override) : { lib: null, state: 'not-built', reason: DECKLINK_MESSAGES.notBuilt })
-  if (process.env.REACH_FAKE_DECKLINK) return (cached = classify(createFakeDeckLink()))
+  if (process.env.REACH_FAKE_DECKLINK) return (cached = classify(createFakeDeckLink(undefined, true)))
   const req = createRequire(__filename)
   let lastError = ''
   for (const p of deckLinkCandidates()) {

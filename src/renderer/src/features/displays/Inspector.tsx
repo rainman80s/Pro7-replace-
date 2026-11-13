@@ -5,6 +5,8 @@ import { Button, Field, Input, Panel, Select } from '@ui/index'
 import { api, useApp } from '../../app/store'
 import { removeOutput, saveOutput, useCanvases, useDisplays } from './state'
 import { SourceOptions, parseSrc, srcKey } from './Routing'
+import { DeckLinkSettings } from './DeckLinkSettings'
+import { defaultDeckLinkMode } from '@shared/decklink'
 
 const PATTERNS: { id: TestPatternId | ''; name: string }[] = [
   { id: '', name: 'Off (show live content)' }, { id: 'grid', name: 'Alignment grid' }, { id: 'bars', name: 'Colour bars' },
@@ -17,7 +19,7 @@ export function Inspector({ output, onClose }: { output: Output; onClose: () => 
   const canvases = useCanvases()
   const outputs = useApp((s) => s.outputs)
   const displays = useApp((s) => s.displays)
-  const { receivers, health, select, audio } = useDisplays()
+  const { receivers, health, select, audio, ports } = useDisplays()
   const [name, setName] = useState(output.name)
   const tr = output.transform ?? {}
   const save = (o: Output): void => void saveOutput(o)
@@ -26,13 +28,15 @@ export function Inspector({ output, onClose }: { output: Output; onClose: () => 
   const group = outputs.find((g) => isGroup(g) && g.target.outputIds.includes(output.id))
   const groups = outputs.filter(isGroup)
   const display = output.target.type === 'display' ? displays.find((d) => d.key === (output.target as { displayKey: string }).displayKey) : undefined
-  const used = new Set(outputs.flatMap((o) => (o.target.type === 'display' ? [`d:${o.target.displayKey}`] : o.target.type === 'network' ? [`n:${o.target.receiverId}`] : [])))
+  const used = new Set(outputs.flatMap((o) => (o.target.type === 'display' ? [`d:${o.target.displayKey}`] : o.target.type === 'network' ? [`n:${o.target.receiverId}`] : o.target.type === 'decklink' ? [`dl:${o.target.device}`] : [])))
   const duplicate = (v: string): void => {
     if (!v) return
     const [kind, ...rest] = v.split(':')
     const id = rest.join(':')
-    const target: Output['target'] = kind === 'd' ? { type: 'display', displayKey: id } : kind === 'n' ? { type: 'network', receiverId: id } : kind === 'ndi' ? { type: 'ndi', name: `${output.name} NDI` } : { type: 'window' }
-    const destName = kind === 'd' ? (displays.find((d) => d.key === id)?.customName || displays.find((d) => d.key === id)?.label) : kind === 'n' ? receivers.find((r) => r.id === id)?.name : kind === 'ndi' ? 'NDI' : 'Window'
+    const port = kind === 'dl' ? ports.find((p) => p.key === id) : undefined
+    const target: Output['target'] = kind === 'd' ? { type: 'display', displayKey: id } : kind === 'n' ? { type: 'network', receiverId: id } : kind === 'ndi' ? { type: 'ndi', name: `${output.name} NDI` }
+      : kind === 'dl' ? { type: 'decklink', device: id, mode: defaultDeckLinkMode(port?.modes ?? [])?.id ?? 'Hp29', keying: 'none' } : { type: 'window' }
+    const destName = kind === 'dl' ? `SDI ${port?.port ?? ''}`.trim() : kind === 'd' ? (displays.find((d) => d.key === id)?.customName || displays.find((d) => d.key === id)?.label) : kind === 'n' ? receivers.find((r) => r.id === id)?.name : kind === 'ndi' ? 'NDI' : 'Window'
     void api.invoke('outputs.duplicate', { id: output.id, target, name: destName ?? undefined })
   }
   const setGroup = (gid: string): void => {
@@ -110,6 +114,7 @@ export function Inspector({ output, onClose }: { output: Output; onClose: () => 
                   <option value="">Also show on…</option>
                   <optgroup label="Displays">{displays.filter((d) => !used.has(`d:${d.key}`) && d.connected !== false).map((d) => <option key={d.key} value={`d:${d.key}`}>{d.customName || d.label}{d.operator ? ' (your screen)' : ''}</option>)}</optgroup>
                   <optgroup label="Network displays">{receivers.filter((r) => !used.has(`n:${r.id}`)).map((r) => <option key={r.id} value={`n:${r.id}`}>{r.name}{r.connected ? '' : ' (offline)'}</option>)}</optgroup>
+                  {ports.length > 0 && <optgroup label="SDI ports">{ports.filter((p) => !used.has(`dl:${p.key}`) && p.connected).map((p) => <option key={p.key} value={`dl:${p.key}`}>{p.key}</option>)}</optgroup>}
                   <optgroup label="Other"><option value="w:">A new window</option><option value="ndi:">A new NDI output</option></optgroup>
                 </Select>
                 <Select style={{ width: 'auto' }} value={group?.id ?? ''} onChange={(e) => setGroup(e.target.value)} aria-label="Group">
@@ -129,6 +134,8 @@ export function Inspector({ output, onClose }: { output: Output; onClose: () => 
               </div>
               {output.target.type === 'display' && display && <DisplayName displayKey={display.key} name={display.customName ?? ''} />}
             </div>
+
+            {output.target.type === 'decklink' && <DeckLinkSettings output={output as Output & { target: Extract<Output['target'], { type: 'decklink' }> }} />}
 
             <div className="dsp-section">
               <div className="dsp-sub">Picture</div>
