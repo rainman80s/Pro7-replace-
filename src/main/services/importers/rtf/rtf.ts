@@ -418,7 +418,8 @@ export function parseRtf(input: Uint8Array | string): RtfDocument {
         if (word === 'u') {
           if (st.dest !== 'body' && st.dest !== 'fonttbl') { skip = st.uc; break }
           if (pendingBytes.length) flushBytes()
-          let code = param ?? 0
+          if (param === null) break // bare \u is not a character
+          let code = param
           if (code < 0) code += 65536
           if (code >= 0xd800 && code <= 0xdbff) {
             if (pendingHigh) { pendingHigh = 0; emit('\uFFFD') }
