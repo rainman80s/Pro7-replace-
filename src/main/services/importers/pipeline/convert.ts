@@ -18,6 +18,7 @@ import { decodeText, importChordPro, importOpenLyrics, importOpenSong, importPla
 import { parseRtf } from '../rtf/rtf'
 import { importLyricsText, newImportId } from '@shared/import-lyrics'
 import { detectFormat } from './detect'
+import { convertPptx } from '../office/pptx'
 
 export interface ConvertedDoc {
   presentation: Presentation
@@ -118,6 +119,14 @@ export function convertBytes(path: string, bytes: Uint8Array, opts: { library?: 
     case 'songselect-txt': fromLyrics(importSongSelectText(text(), titleOf(path)), 'songselect'); break
     case 'text': fromLyrics(importPlainText(titleOf(path), text()), 'text'); break
     case 'rtf': fromLyrics({ presentation: importLyricsText(titleOf(path), parseRtf(bytes).plain, { source: { type: 'rtf' } }), warnings: [] }, 'rtf'); break
+    case 'pptx': {
+      const r = convertPptx(bytes, { sourcePath: path, title: titleOf(path) })
+      out.bundleMedia.push(...r.media.map((m) => ({ path: m.name, data: m.data })))
+      pushPres(r.presentation, r.ctx)
+      break
+    }
+    case 'pdf':
+      throw new Error('PDF: export the pages as images (Preview ▸ Export, or Acrobat ▸ Export ▸ PNG) and drop the image folder onto Reach')
     default:
       throw new Error(`unsupported file type (${format})`)
   }

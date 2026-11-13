@@ -173,7 +173,7 @@ export async function runImport(input: RunInput, target: ImportTarget, opts: Imp
   const missingAll = new Set<string>()
 
   const libsOk = (it: ImportScanItem): boolean => !opts.libraries?.length || !it.group || opts.libraries.includes(it.group)
-  const presItems = input.items.filter((i) => ['pp7-presentation', 'pp7-bundle', 'pp6-presentation', 'chordpro', 'openlyrics', 'opensong', 'songselect-usr', 'songselect-txt', 'text', 'rtf', 'unknown'].includes(i.format) && libsOk(i))
+  const presItems = input.items.filter((i) => ['pp7-presentation', 'pp7-bundle', 'pp6-presentation', 'pptx', 'pdf', 'chordpro', 'openlyrics', 'opensong', 'songselect-usr', 'songselect-txt', 'text', 'rtf', 'unknown'].includes(i.format) && libsOk(i))
   const playlistFileItems = input.items.filter((i) => i.format === 'pp7-playlist' || i.format === 'pp6-playlist')
   const playlistDocItems = input.items.filter((i) => i.format === 'pp7-playlist-doc')
   const configItems = input.items.filter((i) => i.format === 'pp7-config')

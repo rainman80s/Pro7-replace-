@@ -173,6 +173,8 @@ declare module './api' {
     /** Import individual files (drag and drop / File > Import): .pro, .probundle, .proplaylist, .pro6, .reach, .reachbundle, lyrics, PDF, images… */
     'import.files': { req: { paths: string[]; options?: ImportOptions & { playlistId?: ID; asImages?: boolean } }; res: FileImportResult }
     /** Pasted / typed lyrics → presentation. */
+    /** File bytes from the renderer (drag & drop): written to a temp file and imported like import.files. */
+    'import.data': { req: { name: string; base64: string }; res: FileImportResult }
     'import.text': { req: { title: string; text: string; meta?: Record<string, unknown> }; res: { id: ID } }
     /** Saved reports (newest first). */
     'import.reports': { req: void; res: { id: ID; root: string; startedAt: string; totals: ImportReport['totals'] }[] }
@@ -185,6 +187,8 @@ declare module './api' {
   }
   interface ApiEvents {
     'import.progress': ImportProgress
+    /** A file opened from Finder / the command line was imported. */
+    'import.opened': FileImportResult
     'import.done': { jobId: ID; reportId: ID; totals: ImportReport['totals']; cancelled?: boolean; error?: string }
   }
 }
