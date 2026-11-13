@@ -28,7 +28,7 @@ describe('synthetic .pro (encoded with the vendored protos)', () => {
     expect(s3.actions!.map((a) => a.type)).toEqual(['macro.run', 'media.play'])
     expect(s3.actions![1].params).toMatchObject({ layer: 'audio', volume: 0.5 })
     expect(s3.autoAdvance).toBe(8)
-    expect((p.meta.source as { unmapped: { type: string }[] }).unmapped.map((u) => u.type)).toEqual(['ACTION_TYPE_SOCIAL_MEDIA'])
+    expect((p.meta.source as unknown as { unmapped: { type: string }[] }).unmapped.map((u) => u.type)).toEqual(['ACTION_TYPE_SOCIAL_MEDIA'])
     expect(r.unknownFields).toEqual({ 'rv.data.Presentation#99': 1 })
   })
   it('keeps arrangement repeats, the selected arrangement, hot keys and CCLI', () => {

@@ -154,7 +154,7 @@ export const PNG_1PX = Buffer.from('89504e470d0a1a0a0000000d49484452000000010000
  * a Playlists/Library document, Configuration/* and a theme from the vendored corpus, and a ZIP64-bug bundle.
  */
 export function buildFakeProPresenterFolder(dir: string, samplesDir: string): void {
-  const mk = (p: string): void => fs.mkdirSync(path.join(dir, p), { recursive: true })
+  const mk = (p: string): void => { fs.mkdirSync(path.join(dir, p), { recursive: true }) }
   const cp = (from: string, to: string): void => { mk(path.dirname(to)); fs.copyFileSync(path.join(samplesDir, from), path.join(dir, to)) }
   mk('Libraries/Default'); mk('Libraries/Hymns'); mk('Playlists'); mk('Media/Backgrounds'); mk('Media/Images'); mk('Configuration'); mk('Themes')
   fs.writeFileSync(path.join(dir, 'Libraries/Default/Synthetic Song.pro'), syntheticPresentation())
