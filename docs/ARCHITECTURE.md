@@ -11,7 +11,7 @@ Stack: Electron + electron-vite + React 19 + TypeScript + zustand. No backend re
 | ProPresenter | Reach Presenter |
 |---|---|
 | Screens + Looks + Props hacks for odd displays | **Canvas** = a logical screen ("Main", "LED Wall", "Lobby", "Stage"). A canvas can have **Regions** (e.g. "LED Top"/"LED Bottom" of a stacked wall). |
-| Screen configuration per machine | **Output** = routes a canvas *or one region* to a destination: local display, floating window, NDI, network receiver, or a group. Outputs are machine-local and remembered. Two outputs with the same source = duplication. |
+| Screen configuration per machine | **Output** = routes a canvas *or one region* to a destination: local display, floating window, NDI, DeckLink SDI port (docs/decklink.md), network receiver, or a group. Outputs are machine-local and remembered. Two outputs with the same source = duplication. |
 | Looks | `canvas.layers` (which layers a canvas shows) |
 | One slide design for all screens | `slide.elements` (base) + optional `slide.variants[canvasId]` designed in that canvas's pixel space, edited with region guides |
 | Library on one machine / ProSync | **Workspace** = a plain folder of JSON + media, safe to sync (atomic writes + file watchers) |

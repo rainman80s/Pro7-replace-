@@ -436,6 +436,9 @@ sender clock the video (`clockVideo`) so frame pacing is steady; advertise a sta
 - Recommendation: do not build this for v1. An SDI output today is more cheaply reached with a full-screen
   window on an HDMI output through a converter, or NDI into a hardware decoder. Revisit on real demand, and
   design the output abstraction so a DeckLink sender slots in like NDI.
+- **Update:** built after all, because the church's real config routes every screen through a DeckLink Duo 2.
+  It's our own small node-addon-api addon (`native/decklink`, built on the Mac against the SDK) behind the same
+  `FrameSink` as NDI, not macadam. See `docs/decklink.md`.
 
 ### 3.5 Network TVs
 
