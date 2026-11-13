@@ -221,6 +221,7 @@ try {
   await win.click(tid('nav-settings'))
   await win.waitForSelector(tid('settings-view'))
   await win.waitForFunction(() => document.querySelector('[data-testid="remote-url"]')?.value.startsWith('http'))
+  await snap('settings-1440.png')
 
   step('welcome guide opens from Settings and can be skipped')
   await win.click('button:has-text("Show again")')
