@@ -31,6 +31,7 @@
     "vitest": "^5.1.0"
   },
   "dependencies": {
+    "@xmldom/xmldom": "^0.8.15",
     "bonjour-service": "^1.4.4",
     "fflate": "^0.8.3",
     "nanoid": "^6.0.2",

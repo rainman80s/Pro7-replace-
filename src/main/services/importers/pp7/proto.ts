@@ -127,3 +127,12 @@ export function cssColor(c: RGBA | undefined | null, opts: { keepTransparent?: b
   if (a >= 0.999) return '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('').toUpperCase()
   return `rgba(${r}, ${g}, ${b}, ${Math.round(a * 1000) / 1000})`
 }
+
+/** Stricter than looksLikeMessage: decodes and requires presentation-ish content (uuid / name / cues). */
+export function isPresentationBytes(bytes: Uint8Array): boolean {
+  if (!looksLikeMessage('rv.data.Presentation', bytes)) return false
+  try {
+    const p = pp7Type('rv.data.Presentation').decode(bytes) as unknown as { uuid?: { string?: string }; name?: string; cues?: unknown[]; application_info?: unknown }
+    return !!(p.uuid?.string && /^[0-9a-f-]{32,36}$/i.test(p.uuid.string)) || !!(p.application_info && (p.name || p.cues?.length))
+  } catch { return false }
+}
