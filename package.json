@@ -53,12 +53,14 @@
       "target": [
         "dmg",
         "zip"
-      ]
+      ],
+      "icon": "resources/icon.icns"
     },
     "win": {
       "target": [
         "nsis"
-      ]
+      ],
+      "icon": "resources/icon.ico"
     },
     "fileAssociations": [
       {
@@ -69,7 +71,10 @@
         "ext": "reachbundle",
         "name": "Reach Bundle"
       }
-    ]
+    ],
+    "linux": {
+      "icon": "resources/icon-square.png"
+    }
   },
   "private": true,
   "optionalDependencies": {

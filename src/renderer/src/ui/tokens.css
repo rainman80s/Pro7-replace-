@@ -1,36 +1,82 @@
-/* Reach brand tokens — see docs/brand/README.md. The operator UI is dark (booth-friendly), built on Charcoal. */
+/*
+ * Reach brand tokens — see docs/brand/README.md and docs/design/ux-principles.md.
+ *
+ * The operator UI is dark (booth-friendly), built on Charcoal with Paper text.
+ * The two accents each mean exactly one thing, everywhere:
+ *   Mustard  (--live)   = "this is on screen right now"
+ *   Lakeside (--accent) = selection, focus and the primary action
+ * Don't use either as decoration: on Charcoal the guide warns it "drifts tech-driven".
+ */
 :root {
+  /* brand */
   --charcoal: #292929;
   --lakeside: #3886ce;
   --mustard: #e6a20f;
   --paper: #f4f2eb;
   --white: #ffffff;
 
-  --bg: #1f1f1f;
+  /* surfaces (warm charcoal tints, never blue-grey) */
+  --bg: #20201f;
   --bg-raised: #292929;
-  --bg-sunken: #181818;
-  --bg-hover: #333333;
-  --border: #3a3a3a;
-  --text: #f4f2eb;
-  --text-dim: #a9a7a1;
-  --text-faint: #6f6e6a;
-  --accent: var(--lakeside);
-  --live: var(--mustard);
-  --danger: #d8523f;
-  --ok: #4fa88b;
+  --bg-sunken: #191918;
+  --bg-hover: #333331;
+  --bg-active: #3b3a37;
+  --border: #3d3c38;
+  --border-soft: #32312e;
+  --border-strong: #56544e;
 
-  --font-display: 'Perfectly Nineties', 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  /* text */
+  --text: #f4f2eb;
+  --text-dim: #b3b0a7;
+  --text-faint: #7d7b74;
+
+  /* meaning */
+  --accent: var(--lakeside);
+  --accent-text: #86b9e8;
+  --accent-soft: rgba(56, 134, 206, .16);
+  --live: var(--mustard);
+  --live-soft: rgba(230, 162, 15, .14);
+  --on-live: #1d1b16;
+  --danger: #d8523f;
+  --danger-soft: rgba(216, 82, 63, .14);
+  --ok: #5fae8f;
+  /* Warnings are terracotta, NOT Mustard: Mustard only ever means "live". */
+  --warn: #e07b4f;
+  --warn-text: #f0a47f;
+  --focus: #9cc6ee;
+
+  /* type */
+  --font-display: 'Perfectly Nineties', 'Instrument Serif', 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
   --font-label: 'TAY Birdie', 'Reach Sans', system-ui, sans-serif;
   --font-ui: 'Reach Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'Courier Prime', 'Courier New', ui-monospace, monospace;
+  --font-accent: 'Marina Script', 'Instrument Serif', cursive;
 
-  --radius: 8px;
-  --radius-sm: 5px;
+  /* shape & rhythm */
+  --radius: 10px;
+  --radius-sm: 6px;
+  --radius-lg: 16px;
   --gap: 12px;
+  --control-h: 32px;
+  --control-h-sm: 26px;
+  --control-h-lg: 44px;
+  --shadow-pop: 0 18px 50px rgba(0, 0, 0, .5), 0 2px 8px rgba(0, 0, 0, .35);
+  --ease: cubic-bezier(.2, .7, .2, 1);
 }
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
-body { background: var(--bg); color: var(--text); font: 13px/1.4 var(--font-ui); -webkit-font-smoothing: antialiased; user-select: none; overflow: hidden; }
+body { background: var(--bg); color: var(--text); font: 13px/1.45 var(--font-ui); -webkit-font-smoothing: antialiased; user-select: none; overflow: hidden; }
 input, textarea, select, button { font: inherit; color: inherit; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: #444; border-radius: 5px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb { background: #4a4945; border-radius: 5px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: #63615b; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-corner { background: transparent; }
+::selection { background: rgba(56, 134, 206, .45); }
+
+/* One focus ring for everything keyboard-reachable. */
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+}

@@ -1,11 +1,23 @@
 /*
- * Brand fonts. Perfectly Nineties, TAY Birdie and Marina Script are licensed fonts:
- * if they are installed on the computer they are picked up via local(); to bundle
- * them, drop the files in src/renderer/public/fonts/ (see docs/brand/README.md).
- * "Reach Sans" is the neutral UI/slide sans stack alias.
+ * Brand fonts.
+ *
+ * Perfectly Nineties (display), TAY Birdie (labels) and Marina Script (accent) are commercial
+ * typefaces. They are NOT bundled. If they are installed on the computer (they are on Reach's
+ * Macs) they are picked up through local(); to bundle licensed copies, drop the files in
+ * src/renderer/public/fonts/ and add url() sources here (see docs/brand/README.md).
+ *
+ * Bundled, all SIL OFL 1.1 (licences in ./fonts/):
+ *   Courier Prime     — the brand body face, used for small meta text
+ *   Instrument Serif  — stand-in for Perfectly Nineties when it isn't installed
+ *   Inter             — the neutral UI sans ("Reach Sans") and the stand-in for TAY Birdie
  */
-@font-face { font-family: 'Perfectly Nineties'; src: local('Perfectly Nineties'), local('PerfectlyNineties-Regular'), local('Perfectly Nineties Regular'); font-weight: 400; }
-@font-face { font-family: 'Perfectly Nineties'; src: local('Perfectly Nineties Semibold'), local('PerfectlyNineties-Semibold'); font-weight: 600; }
-@font-face { font-family: 'TAY Birdie'; src: local('TAY Birdie'), local('TAYBirdieRegular'), local('TAYBirdie-Regular'); }
-@font-face { font-family: 'Marina Script'; src: local('Marina Script'), local('MarinaScriptRegular'); }
-@font-face { font-family: 'Reach Sans'; src: local('Inter'), local('SF Pro Display'), local('Helvetica Neue'), local('Segoe UI'), local('Arial'); font-weight: 100 900; }
+@font-face { font-family: 'Perfectly Nineties'; src: local('Perfectly Nineties'), local('PerfectlyNineties-Regular'), local('Perfectly Nineties Regular'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Perfectly Nineties'; src: local('Perfectly Nineties Semibold'), local('PerfectlyNineties-Semibold'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'TAY Birdie'; src: local('TAY Birdie'), local('TAYBirdieRegular'), local('TAYBirdie-Regular'); font-display: swap; }
+@font-face { font-family: 'Marina Script'; src: local('Marina Script'), local('MarinaScriptRegular'); font-display: swap; }
+
+@font-face { font-family: 'Courier Prime'; src: local('Courier Prime'), url('./fonts/courier-prime-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Courier Prime'; src: local('Courier Prime Bold'), url('./fonts/courier-prime-latin-700-normal.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Instrument Serif'; src: url('./fonts/instrument-serif-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Instrument Serif'; src: url('./fonts/instrument-serif-latin-400-italic.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Reach Sans'; src: url('./fonts/inter-latin-wght-normal.woff2') format('woff2-variations'), local('Inter'), local('SF Pro Display'), local('Helvetica Neue'), local('Segoe UI'), local('Arial'); font-weight: 100 900; font-display: swap; }

@@ -1,111 +1,88 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { Playlist, Presentation } from '@shared/model'
-import { groupOfSlide, orderedSlides } from '@shared/model'
-import { SlideThumb, Fit } from '@shared/render/SlideView'
-import { LiveCanvas } from '@shared/render/LiveCanvas'
-import { Button, Empty, Input, Panel } from '@ui/index'
+import { useEffect, type ReactNode } from 'react'
+import { overlayOpen } from '@ui/index'
 import { defineFeature } from '../../app/feature'
-import { allShowPanels } from '../../app/registry'
-import { api, useApp } from '../../app/store'
+import { useApp } from '../../app/store'
+import { advance, clearAll, clearSlide, currentPlaylist, retreat, toggleBlackout, toggleLogo, useShowUi } from './actions'
+import { LibraryPanel } from './LibraryPanel'
+import { LivePanel } from './LivePanel'
+import { NewSong } from './NewSong'
+import { QuickSearch } from './QuickSearch'
+import { ServicePanel } from './ServicePanel'
+import { SlideGrid } from './SlideGrid'
 import './show.css'
 
-/** BASELINE Show screen: playlist → slides grid → live previews. Click a slide to send it live; arrows/space to step. */
+/**
+ * The operator screen. Three columns, left to right in the order a volunteer thinks:
+ *   what's in the service  →  the slides of the thing I picked  →  what the room sees + Next.
+ */
 function ShowView(): ReactNode {
-  const { playlists, library, live, workspace, selectedPlaylistId, selectedPlaylistItemId, selectedPresentationId, select, loadPresentation, presentations } = useApp()
-  const [q, setQ] = useState('')
-  const playlist: Playlist | undefined = playlists.find((p) => p.id === selectedPlaylistId)
-  const presentation: Presentation | undefined = selectedPresentationId ? presentations[selectedPresentationId] : undefined
-
-  useEffect(() => { if (selectedPresentationId) void loadPresentation(selectedPresentationId) }, [selectedPresentationId, loadPresentation])
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent): void => {
-      const t = e.target as HTMLElement
-      if (t.closest('input, textarea, select, [contenteditable]')) return
-      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); void api.invoke('live.next') }
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); void api.invoke('live.prev') }
-      if (e.key === 'Escape') void api.invoke('live.clear', { layer: 'slide' })
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
-
-  const results = useMemo(() => {
-    const n = q.trim().toLowerCase()
-    return n ? library.filter((p) => p.title.toLowerCase().includes(n) || p.excerpt?.toLowerCase().includes(n)) : library
-  }, [q, library])
-
-  const slides = presentation ? orderedSlides(presentation) : []
-  const panels = allShowPanels()
+  const playlists = useApp((s) => s.playlists)
+  const selectedPlaylistId = useApp((s) => s.selectedPlaylistId)
+  const playlist = playlists.find((p) => p.id === selectedPlaylistId)
   return (
-    <div className="show">
-      <aside className="show-side col">
-        <Panel title="Service" className="grow col" style={{ minHeight: 0 }}
-          actions={<select className="select" value={selectedPlaylistId ?? ''} onChange={(e) => select({ selectedPlaylistId: e.target.value })}>{playlists.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>}>
-          <div className="scroll grow">
-            {playlist?.items.map((it) =>
-              it.type === 'header' ? <div key={it.id} className="pl-header">{it.title}</div> : (
-                <div key={it.id} className={`pl-item ${it.id === selectedPlaylistItemId ? 'on' : ''} ${live.slide?.playlistItemId === it.id ? 'live' : ''}`}
-                  onClick={() => select({ selectedPlaylistItemId: it.id, selectedPresentationId: it.type === 'presentation' ? it.presentationId : null })}>
-                  {it.type === 'presentation' ? (it.title ?? library.find((l) => l.id === it.presentationId)?.title ?? 'Missing') : it.title ?? 'Media'}
-                  {it.type === 'placeholder' && <span className="dim"> — {it.hint ?? 'empty'}</span>}
-                </div>
-              )
-            )}
-          </div>
-        </Panel>
-        <Panel title="Library" className="grow col" style={{ minHeight: 0 }}>
-          <div style={{ padding: '0 8px 8px' }}><Input placeholder="Search songs & slides…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: '100%' }} /></div>
-          <div className="scroll grow">
-            {results.map((p) => (
-              <div key={p.id} className={`pl-item ${p.id === selectedPresentationId && !selectedPlaylistItemId ? 'on' : ''}`} onClick={() => select({ selectedPresentationId: p.id, selectedPlaylistItemId: null })}>
-                {p.title} <span className="dim">· {p.slideCount}</span>
-              </div>
-            ))}
-          </div>
-        </Panel>
+    <div className="show" data-testid="show-view">
+      <aside className="show-side">
+        <ServicePanel />
+        <LibraryPanel />
       </aside>
-
-      <section className="show-grid scroll">
-        {!presentation ? <Empty title="Pick something to present">Choose an item from the service or search the library.</Empty> : (
-          <>
-            <h2 className="show-title">{presentation.title}</h2>
-            <div className="slides">
-              {slides.map((s, i) => {
-                const g = groupOfSlide(presentation, s.id)
-                const isLive = live.slide?.presentationId === presentation.id && live.slide.index === i
-                return (
-                  <button key={`${s.id}-${i}`} className={`slide ${isLive ? 'live' : ''}`} style={{ ['--group' as string]: g?.color ?? '#555' }}
-                    onClick={() => void api.invoke('live.goToSlide', { presentationId: presentation.id, index: i, playlistId: selectedPlaylistItemId ? selectedPlaylistId ?? undefined : undefined, playlistItemId: selectedPlaylistItemId ?? undefined })}>
-                    <SlideThumb elements={s.elements} background={s.background} size={presentation.size} />
-                    <div className="slide-label"><span>{i + 1}</span><span>{s.label ?? g?.name ?? ''}</span></div>
-                  </button>
-                )
-              })}
-            </div>
-          </>
-        )}
-      </section>
-
-      <aside className="show-live col scroll">
-        {workspace?.canvases.map((c) => (
-          <Panel key={c.id} title={c.name}>
-            <div style={{ aspectRatio: `${c.width} / ${c.height}`, margin: '0 8px 8px', background: '#000', borderRadius: 4, overflow: 'hidden' }}>
-              <Fit size={{ width: c.width, height: c.height }}><LiveCanvas canvas={c} live={live} workspace={workspace} showRegions /></Fit>
-            </div>
-          </Panel>
-        ))}
-        <div className="row" style={{ padding: '0 2px' }}>
-          <Button className="grow" onClick={() => void api.invoke('live.prev')}>← Prev</Button>
-          <Button className="grow" variant="live" onClick={() => void api.invoke('live.next')}>Next →</Button>
-        </div>
-        {panels.map((p) => <Panel key={p.id} title={p.title}><p.component /></Panel>)}
-      </aside>
+      <SlideGrid playlist={playlist} />
+      <LivePanel />
     </div>
   )
 }
 
+const typing = (e: KeyboardEvent): boolean => !!(e.target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable]')
+
+/**
+ * Show hotkeys are always on (from any screen), because the operator must be able to advance
+ * or clear even if they wandered into Settings mid-song.
+ */
+function ShowHotkeys(): null {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (typing(e) || overlayOpen() || e.metaKey || e.ctrlKey || e.altKey) return
+      // Space is ALWAYS "next" (never "press the focused button") — that is the one promise a volunteer
+      // needs to be able to rely on. Enter still activates focused buttons for keyboard users.
+      const onButton = !!(e.target as HTMLElement | null)?.closest?.('button, [role="button"], [role="option"], a')
+      switch (e.key) {
+        case ' ':
+          e.preventDefault(); void advance(); break
+        case 'ArrowRight': case 'PageDown': case 'ArrowDown':
+          if (e.key === 'ArrowDown' && onButton) return
+          e.preventDefault(); void advance(); break
+        case 'ArrowLeft': case 'PageUp': case 'ArrowUp':
+          if (e.key === 'ArrowUp' && onButton) return
+          e.preventDefault(); void retreat(); break
+        case 'Escape': e.preventDefault(); void clearSlide(); break
+        case 'F1': e.preventDefault(); void clearAll(); break
+        case 'b': case 'B': if (e.shiftKey) { e.preventDefault(); void toggleBlackout() } break
+        case 'l': case 'L': if (e.shiftKey) { e.preventDefault(); void toggleLogo() } break
+      }
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [])
+  return null
+}
+
 export default defineFeature({
   id: 'show',
-  views: [{ id: 'show', title: 'Show', order: 10, component: ShowView, shortcut: '⌘1' }]
+  views: [{ id: 'show', title: 'Show', order: 10, component: ShowView, shortcut: '⌘1', volunteer: true }],
+  background: [ShowHotkeys, QuickSearch, NewSong],
+  commands: () => [
+    { id: 'show.clearAll', title: 'Clear all screens', keywords: 'panic blank', icon: 'close', run: () => void clearAll() },
+    { id: 'show.logo', title: 'Show the logo', keywords: 'brand', icon: 'logo', run: () => void toggleLogo() },
+    { id: 'show.black', title: 'Black out the screens', keywords: 'blank dark', icon: 'blackout', run: () => void toggleBlackout() },
+    { id: 'show.newSong', title: 'New song from pasted lyrics', keywords: 'create add lyrics', icon: 'music', adminOnly: true, run: () => useShowUi.getState().set({ newSong: { addToService: !!currentPlaylist() } }) },
+    { id: 'show.add', title: 'Add to this service…', keywords: 'playlist insert', icon: 'plus', adminOnly: true, run: () => setTimeout(() => useShowUi.getState().openSearch({ kind: 'add' }), 0) }
+  ],
+  shortcuts: [
+    { group: 'Running the service', keys: 'space', label: 'Next slide (moves on to the next item at the end)' },
+    { group: 'Running the service', keys: 'right', label: 'Next slide' },
+    { group: 'Running the service', keys: 'left', label: 'Back one slide' },
+    { group: 'Running the service', keys: 'esc', label: 'Clear the words (slide)' },
+    { group: 'Running the service', keys: 'F1', label: 'Clear everything' },
+    { group: 'Running the service', keys: 'shift+L', label: 'Show / hide the logo' },
+    { group: 'Running the service', keys: 'shift+B', label: 'Black screen on / off' }
+  ]
 })
