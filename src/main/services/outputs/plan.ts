@@ -6,6 +6,7 @@
  * capture (NDI), rely on a network receiver, or show nothing — plus a plain-language health line.
  */
 import type { Canvas, ID, Output, Rect, Size } from '@shared/model'
+import { normalizePlacement } from '@shared/placement'
 import { evenSize, isGroup, resolveOutputs, type HealthStatus, type OutputHealth, type ResolvedOutput } from '@shared/outputs'
 import { deckLinkRate, type DeckLinkAlign, type DeckLinkDevice, type DeckLinkKeying } from '@shared/decklink'
 
@@ -45,6 +46,11 @@ export interface PlannedDeckLink {
   keying: DeckLinkKeying
   keyLevel: number
   align: DeckLinkAlign
+  /** SDI frame size + the custom placement of the picture in it (see Output.placement). */
+  modeSize?: Size
+  placement?: Rect
+  delayFrames?: number
+  frameMs?: number
 }
 
 export interface PlanInput {
@@ -148,7 +154,8 @@ export function planOutputs(input: PlanInput): Plan {
       windows.push({ outputId: o.id, kind: 'capture', size, fps: o.frameRate ?? 30, name: t.name || o.name, transparent: !!o.transparent })
       runtimeStatus(size)
     } else if (t.type === 'decklink') {
-      const size = evenSize(cropSize(r) ?? { width: 1920, height: 1080 })
+      const placed = o.placement ? normalizePlacement(o.placement) : undefined
+      const size = evenSize(placed ? { width: placed.w, height: placed.h } : cropSize(r) ?? { width: 1920, height: 1080 })
       const dl = input.decklink
       if (!dl?.available) { push('unavailable', dl?.reason ?? 'DeckLink output isn’t available on this computer.', size); continue }
       const dev = dl.devices.find((d) => d.key === t.device)
@@ -175,11 +182,15 @@ export function planOutputs(input: PlanInput): Plan {
         transparent: keying !== 'none' || !!o.transparent,
         decklink: {
           device: dev.key, index: dev.index, displayName: dev.displayName, mode: mode.id, rate: deckLinkRate(mode),
-          keying, keyLevel: Math.max(0, Math.min(255, Math.round(t.keyLevel ?? 255))), align: o.decklinkAlign ?? 'top-left'
+          keying, keyLevel: Math.max(0, Math.min(255, Math.round(t.keyLevel ?? 255))), align: o.decklinkAlign ?? 'top-left',
+          modeSize: { width: mode.width, height: mode.height }, placement: placed && { x: placed.x, y: placed.y, w: size.width, h: size.height },
+          delayFrames: Math.max(0, Math.min(120, Math.round(o.videoDelay ?? 0))), frameMs: 1000 / mode.fps
         }
       })
       if (rt?.sinkProblem) push('blocked', rt.sinkProblem, size)
       else runtimeStatus(size)
+    } else if (t.type === 'placeholder') {
+      push('waiting', 'Not connected to anything yet. Pick where it should go under Hardware › Output.')
     } else if (t.type === 'network') {
       const rx = input.receivers.find((x) => x.id === t.receiverId)
       const size = rx?.width && rx?.height ? { width: rx.width, height: rx.height } : undefined
@@ -210,7 +221,7 @@ export function windowSignature(w: PlannedWindow): string {
   if (w.kind === 'display') return `display:${w.displayKey}`
   if (w.kind === 'capture') {
     const d = w.decklink
-    const dl = d ? `:dl:${d.device}#${d.index}:${d.mode}:${d.keying}:${d.keyLevel}:${d.align}` : ''
+    const dl = d ? `:dl:${d.device}#${d.index}:${d.mode}:${d.keying}:${d.keyLevel}:${d.align}:${d.placement ? `${d.placement.x},${d.placement.y},${d.placement.w},${d.placement.h}` : ''}:${d.delayFrames}` : ''
     return `capture:${w.size.width}x${w.size.height}@${w.fps}:${w.transparent ? 'a' : 'o'}:${w.name}${dl}`
   }
   return 'window'

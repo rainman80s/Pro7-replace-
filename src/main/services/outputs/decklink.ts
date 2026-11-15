@@ -17,6 +17,8 @@ import {
 } from '@shared/decklink'
 import type { Frame, FrameSink, FrameSinkOptions } from './frames'
 import { createFakeDeckLink } from './decklink-fake'
+import { DelayLine, composeFrame } from './compose'
+import type { Rect } from '@shared/model'
 
 /* ───────────────────────── native module contract ───────────────────────── */
 
@@ -219,6 +221,14 @@ export interface DeckLinkSinkConfig {
   keying: DeckLinkKeying
   keyLevel: number
   align?: DeckLinkAlign
+  /** Custom placement of the picture inside the SDI frame (mode pixels). Needs `modeSize`. */
+  placement?: Rect
+  /** SDI frame size of the chosen mode. */
+  modeSize?: { width: number; height: number }
+  /** Video delay in frames of the mode's rate. */
+  delayFrames?: number
+  /** Frame interval in ms (for the delay). */
+  frameMs?: number
 }
 
 /**
@@ -236,10 +246,36 @@ export class DeckLinkSink implements FrameSink {
   /** Frames JS didn't re-send because the card repeats the last one itself. */
   skippedRepeats = 0
   pushed = 0
+  private delay = new DelayLine<{ data: Buffer; width: number; height: number }>()
+  private delayTimer: ReturnType<typeof setInterval> | null = null
+  private composedFrom: Buffer | null = null
+  private composed: Buffer | null = null
 
   constructor(readonly cfg: DeckLinkSinkConfig, private now: () => number = Date.now, private retryMs = 3000) {}
 
-  async open(_opts: FrameSinkOptions): Promise<void> { await this.tryOpen() }
+  async open(_opts: FrameSinkOptions): Promise<void> {
+    await this.tryOpen()
+    if ((this.cfg.delayFrames ?? 0) > 0) {
+      this.delayTimer = setInterval(() => this.flushDelay(), Math.max(4, Math.round(this.cfg.frameMs ?? 33)))
+      this.delayTimer.unref?.()
+    }
+  }
+
+  /** Place the picture inside the SDI frame when a custom placement is set (cached per source buffer, so a static page costs nothing). */
+  private place(frame: Frame): { data: Buffer; width: number; height: number } {
+    const { placement, modeSize } = this.cfg
+    if (!placement || !modeSize) return frame
+    if (frame.data !== this.composedFrom || !this.composed) {
+      this.composed = composeFrame(frame.data, frame.width, frame.height, modeSize.width, modeSize.height, { x: placement.x, y: placement.y })
+      this.composedFrom = frame.data
+    }
+    return { data: this.composed, width: modeSize.width, height: modeSize.height }
+  }
+
+  private flushDelay(): void {
+    const f = this.delay.due(this.now())
+    if (f) this.deliver(f)
+  }
 
   private tryOpen(): Promise<void> {
     if (this.opening) return this.opening
@@ -266,6 +302,18 @@ export class DeckLinkSink implements FrameSink {
       if (this.now() - this.lastTry >= this.retryMs) await this.tryOpen()
       if (!this.handle) return
     }
+    const out = this.place(frame)
+    const frames = this.cfg.delayFrames ?? 0
+    if (frames > 0) {
+      this.delay.push(out, this.now(), frames * (this.cfg.frameMs ?? 33))
+      this.flushDelay()
+      return
+    }
+    this.deliver(out)
+  }
+
+  private deliver(frame: { data: Buffer; width: number; height: number }): void {
+    if (!this.handle) return
     // Same buffer as last time = the page hasn't changed: the card is already repeating it, so skip the copy.
     if (frame.data === this.lastData) { this.skippedRepeats++; return }
     try {
@@ -284,6 +332,8 @@ export class DeckLinkSink implements FrameSink {
 
   async close(): Promise<void> {
     this.closed = true
+    if (this.delayTimer) clearInterval(this.delayTimer)
+    this.delay.clear()
     const h = this.handle
     this.handle = null
     if (this.opening) await this.opening.catch(() => {})

@@ -48,6 +48,8 @@ export interface Canvas {
   /** Optional theme applied to slides that have no variant for this canvas. */
   themeId?: ID
   color?: string
+  /** false = every output of this screen is switched off (Displays > the section toggle). Omitted = on. */
+  enabled?: boolean
 }
 
 export interface Region {
@@ -69,6 +71,8 @@ export type OutputTarget =
   | { type: 'group'; outputIds: ID[] }
   /** A Blackmagic DeckLink SDI port. device = "<model> · port <n>" (see @shared/decklink); mode = DeckLink mode id, e.g. "Hp29". */
   | { type: 'decklink'; device: string; mode: string; keying?: 'none' | 'external' | 'internal'; keyLevel?: number }
+  /** Remembered but not connected to anything yet ("Placeholder"). */
+  | { type: 'placeholder' }
 
 /**
  * An Output routes a canvas (or one region of it) to a destination.
@@ -85,6 +89,10 @@ export interface Output {
   target: OutputTarget
   enabled: boolean
   transform?: OutputTransform
+  /** Custom placement of the picture inside the destination frame, in destination pixels. Omitted = fit (scale). */
+  placement?: Rect
+  /** Video delay in frames (DeckLink only for now; other destinations remember it). */
+  videoDelay?: number
 }
 
 export interface OutputTransform {
@@ -96,6 +104,11 @@ export interface OutputTransform {
   /** How the source fits the destination. */
   fit?: 'contain' | 'cover' | 'stretch'
   brightness?: number
+  /** Colour adjustments, 1 = unchanged (temperature: -1 cool .. 1 warm, 0 = unchanged). */
+  contrast?: number
+  saturation?: number
+  gamma?: number
+  temperature?: number
 }
 
 /* ───────────────────────────── Presentations ───────────────────────────── */

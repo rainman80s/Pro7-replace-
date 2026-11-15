@@ -157,7 +157,7 @@ export class OutputWindows {
 
   private async load(e: Entry): Promise<void> {
     try {
-      await this.ctx.loadPage(e.win, 'output', { outputId: e.plan.outputId, ...(e.plan.kind === 'capture' && e.plan.transparent ? { transparent: '1' } : {}) })
+      await this.ctx.loadPage(e.win, 'output', { outputId: e.plan.outputId, ...(e.plan.kind === 'capture' ? { cap: '1' } : {}), ...(e.plan.kind === 'capture' && e.plan.transparent ? { transparent: '1' } : {}) })
     } catch { /* did-fail-load retries */ }
   }
 

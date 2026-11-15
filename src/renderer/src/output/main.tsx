@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNod
 import { createRoot } from 'react-dom/client'
 import { getApi, onConnection } from '@shared/client'
 import type { OutputDescription } from '@shared/api'
-import type { LiveState, MediaRef, Slide } from '@shared/model'
+import type { LiveState, MediaRef, OutputTransform, Slide } from '@shared/model'
+import { GRADE_FILTER_ID, colorFilterCss, gradeParams, needsSvgGrade } from '@shared/placement'
 import { emptyLiveState } from '@shared/model'
 import { ClockSync, cornerPinMatrix3d } from '@shared/outputs'
 import { mediaUrl } from '@shared/media'
@@ -25,6 +26,7 @@ const api = getApi()
 const q = new URLSearchParams(location.search)
 const mode: 'output' | 'adhoc' | 'receiver' = q.get('outputId') ? 'output' : q.get('canvasId') ? 'adhoc' : 'receiver'
 const transparentParam = q.get('transparent') === '1'
+const capture = q.get('cap') === '1'
 if (transparentParam) {
   document.documentElement.style.background = 'transparent'
   document.body.style.background = 'transparent'
@@ -173,9 +175,9 @@ function Output(): ReactNode {
     return {
       position: 'absolute', left: 0, top: 0, width: size.width, height: size.height, transformOrigin: '0 0',
       transform: parts.join(' ') || undefined,
-      filter: t?.brightness != null && t.brightness !== 1 ? `brightness(${t.brightness})` : undefined
+      filter: colorFilterCss(t)
     }
-  }, [t?.cornerPin, t?.overscan, t?.brightness, size.width, size.height])
+  }, [t?.cornerPin, t?.overscan, t?.brightness, t?.contrast, t?.saturation, t?.gamma, t?.temperature, size.width, size.height])
 
   const showIdentity = identify || (!!identifyOne && (identifyOne === desc?.output?.id || identifyOne === RID))
   const overlay = showIdentity && (
@@ -206,8 +208,12 @@ function Output(): ReactNode {
 
   const rot = t?.rotate ?? 0
   const sideways = rot === 90 || rot === 270
+  // Custom placement (Output target “Custom”): destination pixels → CSS pixels. Capture windows (SDI/NDI) place it in the sink instead.
+  const pl = desc.output?.placement && !capture ? desc.output.placement : undefined
+  const dpr = window.devicePixelRatio || 1
+  const box = pl ? { x: pl.x / dpr, y: pl.y / dpr, w: pl.w / dpr, h: pl.h / dpr } : { x: 0, y: 0, w: size.width, h: size.height }
   const innerStyle: CSSProperties = {
-    position: 'absolute', left: '50%', top: '50%', width: sideways ? size.height : size.width, height: sideways ? size.width : size.height,
+    position: 'absolute', left: box.x + box.w / 2, top: box.y + box.h / 2, width: sideways ? box.h : box.w, height: sideways ? box.w : box.h,
     transform: `translate(-50%, -50%) rotate(${rot}deg) scale(${t?.flipH ? -1 : 1}, ${t?.flipV ? -1 : 1})`
   }
   const inner = { width: innerStyle.width as number, height: innerStyle.height as number }
@@ -215,6 +221,7 @@ function Output(): ReactNode {
   const pattern = desc.output?.testPattern
   return (
     <div style={{ height: '100%', position: 'relative', overflow: 'hidden', background: transparent ? 'transparent' : '#000' }} data-output={desc.output?.id ?? ''} data-rev={live.rev}>
+      {needsSvgGrade(t) && <GradeFilter t={t} />}
       <div style={outerStyle}>
         <div style={innerStyle}>
           {desc.enabled === false ? null : pattern
@@ -224,6 +231,21 @@ function Output(): ReactNode {
       </div>
       {overlay}
     </div>
+  )
+}
+
+function GradeFilter({ t }: { t?: OutputTransform }): ReactNode {
+  const g = gradeParams(t)
+  return (
+    <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden>
+      <filter id={GRADE_FILTER_ID} colorInterpolationFilters="sRGB">
+        <feComponentTransfer>
+          <feFuncR type="gamma" amplitude={g.r} exponent={g.exponent} offset="0" />
+          <feFuncG type="gamma" amplitude={g.g} exponent={g.exponent} offset="0" />
+          <feFuncB type="gamma" amplitude={g.b} exponent={g.exponent} offset="0" />
+        </feComponentTransfer>
+      </filter>
+    </svg>
   )
 }
 

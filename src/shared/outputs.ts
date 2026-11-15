@@ -398,7 +398,7 @@ export function resolveOutputs(outputs: Output[], canvases: Canvas[]): Map<ID, R
       const { columns, rows } = wallGrid(m.count, m.group.groupLayout)
       crop = wallCells(crop, columns, rows)[m.index] ?? crop
     }
-    res.set(o.id, { output: o, groupId: m?.group.id, canvasId, regionId, crop, enabled: o.enabled && (m ? m.group.enabled : true), memberIndex: m?.index })
+    res.set(o.id, { output: o, groupId: m?.group.id, canvasId, regionId, crop, enabled: o.enabled && (m ? m.group.enabled : true) && canvas?.enabled !== false, memberIndex: m?.index })
   }
   return res
 }
@@ -672,6 +672,7 @@ export function destinationLabel(o: Output, displays: DisplayInfo[], receivers: 
   if (t.type === 'ndi') return `NDI “${t.name}”`
   if (t.type === 'window') return 'Window on this computer'
   if (t.type === 'decklink') return `SDI: ${t.device}`
+  if (t.type === 'placeholder') return 'Not connected yet'
   return `Group of ${t.outputIds.length}`
 }
 
