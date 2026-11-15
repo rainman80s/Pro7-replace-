@@ -60,7 +60,7 @@ describe('video delay', () => {
     d.push('a', 0, 100); d.push('b', 40, 100); d.push('c', 80, 100)
     expect(d.due(99)).toBeUndefined()
     expect(d.due(100)).toBe('a')
-    expect(d.due(139)).toBe('b')
+    expect(d.due(140)).toBe('b')
     expect(d.pending).toBe(1)
     expect(d.due(180)).toBe('c')
   })
