@@ -148,7 +148,7 @@ function OutputsStatus(): ReactNode {
   if (!health.length && !safeMode.on) return null
   return (
     <button className={`dsp-status ${safeMode.on ? 'safe' : bad ? 'bad' : 'ok'}`} onClick={() => useApp.getState().setView('displays')} title={health.map((h) => `${h.name}: ${h.message}`).join('\n')} data-outputs-status>
-      <span className="dsp-dot" />{safeMode.on ? 'Outputs hidden' : bad ? `${bad} output${bad > 1 ? 's' : ''} need attention` : `${live} output${live === 1 ? '' : 's'} live`}
+      <span className="dsp-dot" />{safeMode.on ? 'Outputs hidden' : bad ? `${bad} output${bad > 1 ? 's need' : ' needs'} attention` : `${live} output${live === 1 ? '' : 's'} live`}
     </button>
   )
 }
