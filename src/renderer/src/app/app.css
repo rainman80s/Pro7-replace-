@@ -7,7 +7,7 @@
 /* Wordmark: Paper on Charcoal, with clear space of roughly 1× the R on each side. */
 .brand { all: unset; cursor: pointer; display: grid; place-items: center; padding: 6px 4px; margin-right: 18px; color: var(--paper); border-radius: var(--radius-sm); -webkit-app-region: no-drag; }
 .brand:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.nav { display: flex; gap: 2px; height: 100%; align-items: stretch; min-width: 0; }
+.nav { display: flex; gap: 2px; height: 100%; align-items: stretch; flex-shrink: 0; }
 .nav-item { position: relative; display: inline-flex; align-items: center; gap: 7px; padding: 0 12px; border: 0; background: transparent; color: var(--text-dim); cursor: pointer; font: 500 10.5px/1 var(--font-label); letter-spacing: .15em; text-transform: uppercase; white-space: nowrap; transition: color .12s var(--ease); }
 .nav-item:hover { color: var(--text); }
 .nav-item.on { color: var(--text); }
@@ -47,4 +47,13 @@
 @media (max-width: 1100px) {
   .nav-item { padding: 0 9px; letter-spacing: .1em; }
   .brand { margin-right: 8px; }
+}
+
+/* Keep the nav from colliding with the toolbar on laptop-width windows: tighten, then go icon-only (labels stay in tooltips). */
+@media (max-width: 1440px) {
+  .nav-item { padding: 0 8px; letter-spacing: .1em; gap: 5px; }
+}
+@media (max-width: 1320px) {
+  .nav-item span { display: none; }
+  .nav-item { padding: 0 10px; }
 }

@@ -13,7 +13,7 @@ const store = (k: string, v: string): void => { try { localStorage.setItem(k, v)
 /** Persisted open/closed + width of the docked bin. */
 export function useBinState(): { open: boolean; width: number; setOpen(o: boolean): void; setWidth(w: number): void } {
   const [open, o] = useState(() => flag('reach.bin.open', true))
-  const [width, w] = useState(() => Math.min(480, Math.max(200, num('reach.bin.width', 260))))
+  const [width, w] = useState(() => Math.min(480, Math.max(180, num('reach.bin.width', 210))))
   return {
     open, width,
     setOpen: (v) => { o(v); store('reach.bin.open', v ? '1' : '0') },
