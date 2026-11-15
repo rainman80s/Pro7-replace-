@@ -165,3 +165,16 @@ canvas/region ─▶ offscreen output window (same page as every output, rendere
 - Native: `native/decklink/src/decklink_addon.cc`. `pushFrame` never waits for the card: it swaps a buffer under a
   short lock. All DeckLink calls run on libuv worker threads or the driver's own callback thread.
 - Tests: `tests/decklink.test.ts` (fake card), `tests/e2e-decklink.mjs` (`REACH_FAKE_DECKLINK=1`, whole app).
+
+## Screen Configuration (Displays view)
+
+Displays is laid out like ProPresenter's Screen Configuration window: Audience / Stage screens on the left, and for the selected screen (or region)
+a preview plus **Hardware | Color | Corner Pin | Alpha Key** tabs. Hardware has the grouped Output menu (System, Blackmagic with a mode list per port,
+NDI, Network displays, Window, Placeholder), Name, Mode, Video Delay, and Output Target **Fit (scale)** or **Custom** X/Y/Width/Height.
+
+- `Output.placement` is the Custom rect in destination pixels. For SDI the JS side composes the picture into a mode-sized frame at that rect
+  (black / key 0 elsewhere); a screen smaller than its SDI frame defaults to Custom 0,0 (1920x880 in 1080p29.97 -> 0,0,1920,880).
+- `Output.videoDelay` (frames) delays pushed SDI frames in `DeckLinkSink`; other destinations only remember it.
+- Colour (brightness, contrast, saturation, gamma, temperature) is applied as CSS/SVG filters on the output page, so SDI and NDI frames carry it.
+- The old routing, network pairing, region editor and sound/safety panels are under **Network & advanced**.
+UNVERIFIED on hardware: the composed frame and delay were tested against the fake card only.

@@ -5,6 +5,9 @@ import { Button, Panel, Select } from '@ui/index'
 import { defineFeature } from '../../app/feature'
 import { api, useApp } from '../../app/store'
 import { CanvasEditor } from './CanvasEditor'
+import { ScreenEditor } from './ScreenEditor'
+import { ScreenList } from './ScreenList'
+import { selEq, type Sel } from './screens-logic'
 import { NetworkView } from './Network'
 import { RoutingView } from './Routing'
 import { startDisplaysSync, useDisplays } from './state'
@@ -17,14 +20,18 @@ const TABS: { id: Tab; name: string }[] = [
   { id: 'network', name: 'Network displays' },
   { id: 'sound', name: 'Sound & safety' }
 ]
+type Page = 'screens' | 'advanced'
 
 function DisplaysView(): ReactNode {
+  const [page, setPageState] = useState<Page>(() => (localStorage.getItem('reach.displays.page') as Page) || 'screens')
+  const setPage = (p: Page): void => { localStorage.setItem('reach.displays.page', p); setPageState(p) }
   const [tab, setTabState] = useState<Tab>(() => (localStorage.getItem('reach.displays.tab') as Tab) || 'routing')
   const setTab = (t: Tab): void => { localStorage.setItem('reach.displays.tab', t); setTabState(t) }
   const { safeMode, health } = useDisplays()
   useEffect(() => { startDisplaysSync() }, [])
+  // Other parts of the app ask for a sub-tab (“Search network displays…”); those all live under Network & advanced.
   useEffect(() => {
-    const on = (e: Event): void => setTab((e as CustomEvent<Tab>).detail)
+    const on = (e: Event): void => { setTab((e as CustomEvent<Tab>).detail); setPage('advanced') }
     window.addEventListener('reach:displays-tab', on)
     return () => window.removeEventListener('reach:displays-tab', on)
   }, [])
@@ -32,9 +39,10 @@ function DisplaysView(): ReactNode {
   return (
     <div className="dsp-root">
       <div className="dsp-top row">
-        <h2 className="dsp-h">Displays</h2>
+        <h2 className="dsp-h">Screen Configuration</h2>
         <div className="dsp-tabs row">
-          {TABS.map((t) => <button key={t.id} className={`dsp-tab ${tab === t.id ? 'on' : ''}`} onClick={() => setTab(t.id)} data-tab={t.id}>{t.name}</button>)}
+          <button className={`dsp-tab ${page === 'screens' ? 'on' : ''}`} onClick={() => setPage('screens')} data-page="screens">Screens</button>
+          <button className={`dsp-tab ${page === 'advanced' ? 'on' : ''}`} onClick={() => setPage('advanced')} data-page="advanced">Network &amp; advanced</button>
         </div>
         <div className="grow" />
         {problems.length > 0 && <span className="dsp-problems" title={problems.map((p) => `${p.name}: ${p.message}`).join('\n')}>{problems.length} need attention</span>}
@@ -47,12 +55,32 @@ function DisplaysView(): ReactNode {
           <Button variant="live" onClick={() => void api.invoke('outputs.safeMode', { on: false })}>Bring outputs back</Button>
         </div>
       )}
-      <div className="dsp-body">
-        {tab === 'routing' && <RoutingView />}
-        {tab === 'canvases' && <CanvasEditor />}
-        {tab === 'network' && <NetworkView />}
-        {tab === 'sound' && <SoundAndSafety />}
-      </div>
+      {page === 'screens' ? <ScreensPage /> : (
+        <div className="dsp-adv">
+          <div className="dsp-tabs row dsp-subtabs">
+            {TABS.map((t) => <button key={t.id} className={`dsp-tab ${tab === t.id ? 'on' : ''}`} onClick={() => setTab(t.id)} data-tab={t.id}>{t.name}</button>)}
+          </div>
+          <div className="dsp-body">
+            {tab === 'routing' && <RoutingView />}
+            {tab === 'canvases' && <CanvasEditor />}
+            {tab === 'network' && <NetworkView />}
+            {tab === 'sound' && <SoundAndSafety />}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** ProPresenter-style Screen Configuration: screens on the left, the selected screen's output settings on the right. */
+function ScreensPage(): ReactNode {
+  const canvases = useApp((s) => s.workspace?.canvases ?? [])
+  const [picked, setPicked] = useState<Sel | null>(null)
+  const sel: Sel | null = picked && canvases.some((c) => c.id === picked.canvasId && (!picked.regionId || c.regions.some((r) => r.id === picked.regionId))) ? picked : canvases[0] ? { canvasId: canvases[0].id } : null
+  return (
+    <div className="scr-window">
+      <ScreenList sel={sel} onSelect={(s) => setPicked((p) => (p && selEq(p, s) ? p : s))} />
+      <main className="scr-main">{sel ? <ScreenEditor key={`${sel.canvasId}:${sel.regionId ?? ''}`} sel={sel} /> : <div className="scr-detail-empty">Add a screen with + to get started.</div>}</main>
     </div>
   )
 }

@@ -35,6 +35,8 @@ export interface FakeHandle extends DeckLinkHandle {
   pushes: number
   closed: boolean
   lastSize?: { width: number; height: number }
+  /** The newest pushed picture (tests inspect where the content sits in the SDI frame). */
+  lastFrame?: Buffer
 }
 
 export interface FakeDeckLink extends NativeDeckLink {
@@ -72,6 +74,7 @@ export function createFakeDeckLink(devices: DeckLinkNativeDevice[] = fakeChurchD
           if (buf.length < width * height * 4) throw new RangeError('pushFrame: buffer is smaller than width*height*4')
           h.pushes++
           h.lastSize = { width, height }
+          h.lastFrame = buf
           pending = true
         },
         tick() {
@@ -88,5 +91,6 @@ export function createFakeDeckLink(devices: DeckLinkNativeDevice[] = fakeChurchD
       return h
     }
   }
+  ;(globalThis as { __reachFakeDeckLink?: FakeDeckLink }).__reachFakeDeckLink = fake // test hook for tests/e2e-decklink.mjs
   return fake
 }

@@ -131,3 +131,19 @@ describe('plan: placement', () => {
     expect(p.health[0].status).toBe('off')
   })
 })
+
+import { initialPlacement, modeOf, outputsFor } from '../src/renderer/src/features/displays/screens-logic'
+describe('screens logic', () => {
+  it('LED WALL 1920x880 on 1080p defaults to Custom 0,0,1920,880; same size or bigger = Fit', () => {
+    expect(initialPlacement({ width: 1920, height: 880 }, { width: 1920, height: 1080 })).toEqual({ x: 0, y: 0, w: 1920, h: 880 })
+    expect(initialPlacement({ width: 1920, height: 1080 }, { width: 1920, height: 1080 })).toBeUndefined()
+    expect(initialPlacement({ width: 3840, height: 2160 }, { width: 1920, height: 1080 })).toBeUndefined()
+  })
+  it('derives the mode from outputs and groups', () => {
+    const o = (id: string, extra: Partial<Output> = {}): Output => ({ id, name: id, canvasId: 'c', target: { type: 'window' }, enabled: true, ...extra })
+    expect(modeOf([o('a')], { canvasId: 'c' })).toBe('single')
+    expect(modeOf([o('a'), o('b')], { canvasId: 'c' })).toBe('grouped')
+    expect(modeOf([o('a'), o('g', { target: { type: 'group', outputIds: ['a'] }, groupLayout: { mode: 'wall', columns: 2, rows: 1 } })], { canvasId: 'c' })).toBe('wall')
+    expect(outputsFor([o('a', { regionId: 'r' })], { canvasId: 'c' })).toHaveLength(0)
+  })
+})

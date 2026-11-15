@@ -56,6 +56,7 @@ try {
   step = 'ui'
   await win.evaluate(() => window.dispatchEvent(new CustomEvent('reach:goto', { detail: 'displays' })))
   await win.locator('text=Displays').first().click().catch(() => {})
+  await win.evaluate(() => window.dispatchEvent(new CustomEvent('reach:displays-tab', { detail: 'routing' }))) // advanced routing lives under "Network & advanced"
   await win.waitForSelector('[data-decklink-panel]', { timeout: 10000 })
   check(await win.locator('[data-decklink]').count() === 5, 'each SDI port is a destination card')
   await win.locator('[data-decklink="DeckLink Duo 2 · port 2"]').click()
@@ -65,6 +66,43 @@ try {
   await win.locator('[data-decklink-mode]').selectOption('Hp59')
   await until(async () => (await inv('outputs.list')).find((o) => o.id === 'keyo').target.mode === 'Hp59', 'mode change saved')
   check(true, 'changing the video format from the UI saves it')
+  step = 'screen configuration'
+  // The new screen-centric window: a 1920x880 screen routed to a DeckLink port in 1080p29.97 with Custom placement 0,0,1920,880.
+  await inv('workspace.update', { canvases: [...(await inv('workspace.get')).canvases, { id: 'ledwall', name: 'LED WALL 880', kind: 'audience', width: 1920, height: 880, regions: [] }] })
+  await win.locator('[data-page="screens"]').click()
+  await win.waitForSelector('[data-screen="ledwall:"]')
+  await app.evaluate(({ BrowserWindow }) => { const w = BrowserWindow.getAllWindows().find((x) => !x.webContents.isOffscreen() && x.isVisible()); w?.setContentSize(1440, 900) })
+  await win.locator('[data-screen="ledwall:"]').click()
+  await win.waitForSelector('[data-screen-editor="ledwall:"]')
+  await win.locator('[data-output-menu]').click()
+  await win.waitForSelector('[data-output-menu-list]')
+  await win.locator('[data-menu-item="decklink:DeckLink Duo 2 · port 4"]').click()
+  await win.locator('[data-menu-item="decklink:DeckLink Duo 2 · port 4:Hp29"]').click()
+  await until(async () => (await inv('outputs.list')).some((o) => o.canvasId === 'ledwall' && o.target.type === 'decklink'), 'output created from the menu')
+  const led = (await inv('outputs.list')).find((o) => o.canvasId === 'ledwall')
+  check(led.target.mode === 'Hp29' && JSON.stringify(led.placement) === JSON.stringify({ x: 0, y: 0, w: 1920, h: 880 }), 'new SDI output defaults to Custom 0,0,1920,880 in 1080p29.97')
+  await win.waitForSelector('[data-placement]')
+  check(await win.locator('[data-output-target]').inputValue() === 'custom', 'Output Target shows Custom')
+  await inv('outputs.testPattern', { id: led.id, pattern: 'bars' })
+  await until(async () => (await inv('outputs.health')).find((h) => h.outputId === led.id)?.status === 'live', 'LED WALL 880 live')
+  const probe = async () => app.evaluate(() => {
+    const h = globalThis.__reachFakeDeckLink.handles.filter((x) => x.opts.displayName === 'DeckLink Duo (4)').at(-1)
+    if (!h?.lastFrame) return null
+    const w = h.lastSize.width, ht = h.lastSize.height, f = h.lastFrame
+    const px = (x, y) => [f[(y * w + x) * 4], f[(y * w + x) * 4 + 1], f[(y * w + x) * 4 + 2]]
+    const sum = (y) => { let s = 0; for (let x = 0; x < w; x += 40) { const p = px(x, y); s += p[0] + p[1] + p[2] } return s }
+    return { w, ht, top: sum(100) + sum(400) + sum(870), bottom: sum(890) + sum(1000) + sum(1079) }
+  })
+  await until(async () => (await probe())?.top > 0, 'composed frame reaches the card')
+  const fr = await probe()
+  check(fr.w === 1920 && fr.ht === 1080 && fr.top > 0 && fr.bottom === 0, `composed 1920x1080 frame: content in the top 880 rows, black below (top ${fr.top}, bottom ${fr.bottom})`)
+  await win.locator('[data-output-target]').selectOption('fit')
+  await until(async () => JSON.stringify((await inv('outputs.list')).find((o) => o.id === led.id).placement) === JSON.stringify({ x: 0, y: 100, w: 1920, h: 880 }), 'fit placement saved')
+  check(true, 'Fit (scale) centres the picture in the SDI frame')
+  await win.locator('[data-output-target]').selectOption('custom')
+  await win.locator('[data-output-menu]').click()
+  await win.waitForSelector('[data-output-menu-list]')
+  if (shot) await win.screenshot({ path: join(shot, 'screen-config.png') })
   check(!errors.length, `no page errors ${errors.join(' | ')}`)
   console.log('\nDeckLink e2e passed')
 } catch (e) {

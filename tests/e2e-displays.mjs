@@ -164,6 +164,9 @@ try {
 
   step = 'displays view'
   await win.click('.nav-item:has-text("Displays")')
+  await win.waitForSelector('[data-screen-editor]')
+  check(await win.locator('[data-section]').count() === 2, 'Screen Configuration lists Audience and Stage')
+  await win.click('[data-page="advanced"]')
   await win.click('[data-tab="routing"]')
   await win.waitForSelector('[data-group]')
   if (shot) await win.screenshot({ path: join(shot, 'displays-routing.png') })
