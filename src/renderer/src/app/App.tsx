@@ -7,6 +7,7 @@ import { toggleLock } from './lock'
 import { StatusItem } from './status'
 import { AboutOverlay, ShortcutsOverlay } from './overlays'
 import './app.css'
+import '../ui/pro-skin.css'
 
 /** Default icons for the well-known screens, so the nav looks whole even if a feature forgets one. */
 const NAV_ICONS: Record<string, string> = { show: 'show', edit: 'edit', media: 'media', bible: 'bible', displays: 'displays', integrations: 'integrations', settings: 'settings' }

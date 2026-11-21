@@ -1,5 +1,5 @@
 /*
- * Reach brand tokens — see docs/brand/README.md and docs/design/ux-principles.md.
+ * Operator UI tokens: ProPresenter-style neutral greys with the Reach logo and fonts kept for brand moments.
  *
  * The operator UI is dark (booth-friendly), built on Charcoal with Paper text.
  * The two accents each mean exactly one thing, everywhere:
@@ -8,74 +8,82 @@
  * Don't use either as decoration: on Charcoal the guide warns it "drifts tech-driven".
  */
 :root {
-  /* brand */
+  /* brand (kept for logos and the welcome screens) */
   --charcoal: #292929;
   --lakeside: #3886ce;
-  --mustard: #e6a20f;
-  --paper: #f4f2eb;
+  /* In the operator UI "mustard" is the live colour; it follows ProPresenter's live orange so
+     volunteers coming from ProPresenter read it instantly. */
+  --mustard: #f5861f;
+  --paper: #e8e8e8;
   --white: #ffffff;
 
-  /* surfaces (warm charcoal tints, never blue-grey) */
-  --bg: #1f1f1e;
-  --bg-raised: #2a2a28;
-  --bg-sunken: #191918;
-  --bg-hover: #333331;
-  --bg-active: #3b3a37;
-  --border: #3d3c38;
-  --border-soft: #32312e;
-  --border-strong: #56544e;
+  /* surfaces: neutral greys, close to ProPresenter 7's dark theme */
+  --bg: #1e1e1e;
+  --bg-raised: #282828;
+  --bg-panel-head: #323232;
+  --bg-sunken: #161616;
+  --bg-hover: #353535;
+  --bg-active: #414141;
+  --border: #3c3c3c;
+  --border-soft: #2e2e2e;
+  --border-strong: #565656;
+  --divider: #0d0d0d;
 
   /* text */
-  --text: #f4f2eb;
-  --text-dim: #b3b0a7;
-  --text-faint: #7d7b74;
+  --text: #ececec;
+  --text-dim: #a8a8a8;
+  --text-faint: #727272;
 
   /* meaning */
-  --accent: var(--lakeside);
-  --accent-text: #86b9e8;
-  --accent-soft: rgba(56, 134, 206, .16);
+  --accent: #2f7fd6;
+  --accent-text: #7fb6ef;
+  --accent-soft: rgba(47, 127, 214, .22);
+  --select: #2a5d93;
   --live: var(--mustard);
-  --live-soft: rgba(230, 162, 15, .14);
-  --on-live: #1d1b16;
-  --danger: #d8523f;
-  --danger-soft: rgba(216, 82, 63, .14);
-  --ok: #5fae8f;
-  /* Warnings are terracotta, NOT Mustard: Mustard only ever means "live". */
-  --warn: #e07b4f;
-  --warn-text: #f0a47f;
-  --focus: #9cc6ee;
+  --live-soft: rgba(245, 134, 31, .16);
+  --on-live: #1a1206;
+  --danger: #e0473a;
+  --danger-soft: rgba(224, 71, 58, .16);
+  --ok: #4fb46e;
+  /* Warnings are yellow, never the live orange. */
+  --warn: #d9b33a;
+  --warn-text: #ead07c;
+  --focus: #79b2ee;
 
-  /* type */
-  --font-display: 'Perfectly Nineties', 'Instrument Serif', 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
-  --font-label: 'TAY Birdie', 'Reach Sans', system-ui, sans-serif;
-  --font-ui: 'Reach Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: 'Courier Prime', 'Courier New', ui-monospace, monospace;
+  /* type: one system sans everywhere, like ProPresenter */
+  --font-sys: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', 'Segoe UI', system-ui, sans-serif;
+  --font-display: var(--font-sys);
+  --font-label: var(--font-sys);
+  --font-ui: var(--font-sys);
+  --font-mono: var(--font-sys);
+  --font-code: 'SF Mono', Menlo, Consolas, 'Courier New', ui-monospace, monospace;
+  --font-brand: 'Perfectly Nineties', 'Instrument Serif', Georgia, serif;
   --font-accent: 'Marina Script', 'Instrument Serif', cursive;
 
-  /* shape & rhythm */
-  --radius: 10px;
-  --radius-sm: 6px;
-  --radius-lg: 16px;
-  --gap: 12px;
-  --control-h: 32px;
-  --control-h-sm: 26px;
-  --control-h-lg: 44px;
-  /* depth: raised surfaces get a 1px top highlight plus a soft contact + ambient shadow */
-  --hl: inset 0 1px 0 rgba(255, 255, 255, .055);
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, .28), 0 3px 8px rgba(0, 0, 0, .18);
-  --shadow-2: 0 2px 4px rgba(0, 0, 0, .3), 0 8px 22px rgba(0, 0, 0, .28);
-  --shadow-pop: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 16px rgba(0, 0, 0, .32), 0 22px 54px rgba(0, 0, 0, .46), inset 0 1px 0 rgba(255, 255, 255, .06);
+  /* shape & rhythm: tighter, squarer controls */
+  --radius: 5px;
+  --radius-sm: 4px;
+  --radius-lg: 8px;
+  --gap: 8px;
+  --control-h: 28px;
+  --control-h-sm: 22px;
+  --control-h-lg: 40px;
+  /* depth: subtle, macOS-like */
+  --hl: inset 0 1px 0 rgba(255, 255, 255, .045);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, .35);
+  --shadow-2: 0 2px 6px rgba(0, 0, 0, .4);
+  --shadow-pop: 0 0 0 1px rgba(0, 0, 0, .5), 0 10px 30px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .06);
   --ease: cubic-bezier(.2, .7, .2, 1);
 }
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
-body { background: var(--bg); color: var(--text); font: 13px/1.45 var(--font-ui); -webkit-font-smoothing: antialiased; user-select: none; overflow: hidden; }
+body { background: var(--bg); color: var(--text); font: 12.5px/1.4 var(--font-ui); -webkit-font-smoothing: antialiased; user-select: none; overflow: hidden; }
 input, textarea, select, button { font: inherit; color: inherit; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: #4a4945; border-radius: 5px; border: 2px solid transparent; background-clip: content-box; }
-::-webkit-scrollbar-thumb:hover { background: #63615b; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb { background: #4a4a4a; border-radius: 5px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: #646464; border: 2px solid transparent; background-clip: content-box; }
 ::-webkit-scrollbar-corner { background: transparent; }
-::selection { background: rgba(56, 134, 206, .45); }
+::selection { background: rgba(47, 127, 214, .45); }
 
 /* One focus ring for everything keyboard-reachable. */
 :focus { outline: none; }

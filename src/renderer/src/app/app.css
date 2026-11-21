@@ -8,7 +8,7 @@
 .brand { all: unset; cursor: pointer; display: grid; place-items: center; padding: 6px 4px; margin-right: 18px; color: var(--paper); border-radius: var(--radius-sm); -webkit-app-region: no-drag; }
 .brand:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .nav { display: flex; gap: 2px; height: 100%; align-items: stretch; flex-shrink: 0; }
-.nav-item { position: relative; display: inline-flex; align-items: center; gap: 7px; padding: 0 12px; border: 0; background: transparent; color: var(--text-dim); cursor: pointer; font: 500 10.5px/1 var(--font-label); letter-spacing: .15em; text-transform: uppercase; white-space: nowrap; transition: color .12s var(--ease); }
+.nav-item { position: relative; display: inline-flex; align-items: center; gap: 7px; padding: 0 12px; border: 0; background: transparent; color: var(--text-dim); cursor: pointer; font: 500 10.5px/1 var(--font-label); letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; transition: color .12s var(--ease); }
 .nav-item:hover { color: var(--text); }
 .nav-item.on { color: var(--text); }
 .nav-item.on::after { content: ''; position: absolute; left: 10px; right: 10px; bottom: 0; height: 2px; border-radius: 2px 2px 0 0; background: var(--paper); }
@@ -21,7 +21,7 @@
 
 .live-pill { display: inline-flex; align-items: center; gap: 8px; max-width: 280px; height: 30px; padding: 0 12px; border-radius: 15px; border: 1px solid var(--border); background: transparent; color: var(--text-dim); cursor: pointer; }
 .live-pill.on { border-color: color-mix(in srgb, var(--live) 60%, transparent); background: var(--live-soft); color: var(--text); }
-.live-pill-label { font: 600 10px/1 var(--font-label); letter-spacing: .16em; text-transform: uppercase; }
+.live-pill-label { font: 600 10px/1 var(--font-label); letter-spacing: .04em; text-transform: uppercase; }
 .live-pill.on .live-pill-label { color: var(--mustard); }
 .live-pill-text { font: 12px/1 var(--font-mono); }
 

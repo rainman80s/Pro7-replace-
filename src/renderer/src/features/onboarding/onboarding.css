@@ -1,18 +1,18 @@
-.wel-backdrop { position: fixed; inset: 0; z-index: 150; display: grid; place-items: center; padding: 24px; background: rgba(12, 12, 11, .72); animation: reach-fade .2s var(--ease); }
+.wel-backdrop { position: fixed; inset: 0; z-index: 150; display: grid; place-items: center; padding: 24px; background: rgba(0, 0, 0, .72); animation: reach-fade .2s var(--ease); }
 .wel { display: grid; grid-template-columns: 300px minmax(0, 1fr); width: min(860px, 100%); height: min(540px, 100%); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-pop); animation: reach-pop .24s var(--ease); }
 /* Brand side: the only Paper surface in the app — Charcoal logo on Paper, as the guide prefers. */
 .wel-brand { background: var(--paper); color: var(--charcoal); padding: 40px 30px 28px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
-.wel-hello { font: 400 24px/1.2 var(--font-display); text-align: center; margin-top: 10px; }
-.wel-sub { color: #6b6962; text-align: center; max-width: 220px; line-height: 1.5; }
+.wel-hello { font: 400 24px/1.2 var(--font-brand); text-align: center; margin-top: 10px; }
+.wel-sub { color: #666666; text-align: center; max-width: 220px; line-height: 1.5; }
 .wel-steps { margin-top: auto; width: 100%; display: flex; flex-direction: column; gap: 2px; }
-.wel-step { all: unset; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 6px; font-size: 12.5px; color: #6b6962; }
+.wel-step { all: unset; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 6px; font-size: 12.5px; color: #666666; }
 .wel-step > span { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font: 11px var(--font-mono); box-shadow: inset 0 0 0 1px #c9c6bc; }
 .wel-step.on { color: var(--charcoal); font-weight: 600; background: rgba(41, 41, 41, .06); }
 .wel-step.on > span { background: var(--charcoal); color: var(--paper); box-shadow: none; }
 .wel-step.done > span { background: var(--lakeside); color: #fff; box-shadow: none; }
 .wel-main { background: var(--bg-raised); padding: 36px 36px 22px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; min-width: 0; }
 .wel-icon { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 14px; background: var(--bg-sunken); color: var(--paper); margin-top: 14px; }
-.wel-title { margin: 6px 0 0; font: 400 34px/1.1 var(--font-display); }
+.wel-title { margin: 6px 0 0; font: 400 34px/1.1 var(--font-brand); }
 .wel-body { margin: 0; max-width: 440px; color: var(--text-dim); font: 13.5px/1.6 var(--font-mono); }
 .wel-path { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: var(--radius-sm); background: var(--bg-sunken); color: var(--text-faint); max-width: 100%; }
 .wel-path .t-meta { word-break: break-all; }

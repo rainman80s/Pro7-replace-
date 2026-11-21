@@ -1,0 +1,159 @@
+/*
+ * ProPresenter-style skin.
+ *
+ * Volunteers arrive knowing ProPresenter 7, so the operator UI borrows its look: neutral greys,
+ * flat panes split by thin black dividers, grey header bars, a toolbar with icons over labels,
+ * slide thumbnails with a coloured group bar, an orange live outline and a solid blue selection.
+ * Colours live in tokens.css; this file holds the structural parts of the look. Every selector
+ * starts with `.app` so it wins over the feature stylesheets regardless of load order.
+ */
+
+/* ── window chrome ── */
+.app { grid-template-rows: 58px minmax(0, 1fr) 24px; background: var(--divider); }
+.app .topbar { background: linear-gradient(#363636, #2b2b2b); border-bottom: 1px solid var(--divider); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06); gap: 6px; }
+.app .brand { margin-right: 10px; opacity: .9; }
+.app .nav { gap: 2px; padding: 5px 0; }
+.app .nav-item { flex-direction: column; justify-content: center; gap: 4px; min-width: 58px; padding: 0 9px; border-radius: 5px; font: 500 11px/1 var(--font-ui); letter-spacing: 0; text-transform: none; color: var(--text-dim); }
+.app .nav-item .icon { width: 19px; height: 19px; }
+.app .nav-item:hover { background: rgba(255, 255, 255, .05); color: var(--text); }
+.app .nav-item.on { background: rgba(255, 255, 255, .1); color: #fff; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06); }
+.app .nav-item.on .icon { color: var(--accent-text); }
+.app .nav-item.on::after { display: none; }
+.app .search-trigger, .app .live-pill, .app .lock-on { height: 26px; border-radius: 5px; background: var(--bg-sunken); border-color: #1a1a1a; }
+.app .live-pill.on { background: var(--live-soft); border-color: color-mix(in srgb, var(--live) 60%, transparent); }
+.app .live-pill-text { font-family: var(--font-ui); }
+.app .statusbar { background: #262626; border-top: 1px solid var(--divider); font: 11px/1 var(--font-ui); }
+.app .status-item { height: 18px; }
+@media (max-width: 1440px) { .app .nav-item { min-width: 50px; padding: 0 6px; } }
+/* Narrow windows hide the labels, so the toolbar shrinks back to icons. */
+@media (max-width: 1320px) { .app .nav-item { min-width: 40px; } .app .nav-item .icon { width: 18px; height: 18px; } }
+
+/* ── buttons: subtle macOS-style bevel ── */
+.app .btn { border-color: #1c1c1c; background: linear-gradient(#3e3e3e, #353535); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), 0 1px 1px rgba(0, 0, 0, .25); font-weight: 500; }
+.app .btn:hover { background: linear-gradient(#484848, #3e3e3e); border-color: #1c1c1c; }
+.app .btn:active:not(:disabled) { transform: none; background: #2e2e2e; }
+.app .btn:disabled:hover { background: linear-gradient(#3e3e3e, #353535); border-color: #1c1c1c; }
+.app .btn.primary { background: linear-gradient(#3a8be3, #2a74c9); border-color: #1d5ea8; color: #fff; }
+.app .btn.primary:hover { background: linear-gradient(#4696ec, #317fd6); }
+.app .btn.live { background: linear-gradient(#ff9733, #ef7d14); border-color: #b85f0c; color: var(--on-live); }
+.app .btn.danger { background: linear-gradient(#3e3e3e, #353535); border-color: #1c1c1c; color: #ff8a7f; }
+.app .btn.danger:hover, .app .btn.danger.solid { background: linear-gradient(#e85346, #cc3b2f); border-color: #9e2a21; color: #fff; }
+.app .btn.ghost { background: transparent; border-color: transparent; box-shadow: none; }
+.app .btn.ghost:hover { background: rgba(255, 255, 255, .07); }
+.app .btn.active { background: linear-gradient(#2f6fb8, #285f9e); border-color: #1d5ea8; color: #fff; }
+.app .input, .app .select, .app .textarea, .app .number, .app .color { background: #1a1a1a; border-color: #111; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35); }
+.app .input:hover, .app .select:hover, .app .textarea:hover { border-color: #000; }
+.app .input.mono, .app pre, .app code { font-family: var(--font-code); }
+.app .segmented { background: #1a1a1a; border-color: #111; }
+.app .segmented button.on { background: linear-gradient(#4a4a4a, #404040); }
+.app .toggle input:checked + .toggle-track { background: var(--accent); border-color: var(--accent); }
+
+/* ── panes ── */
+.app .panel { border-color: #141414; border-radius: var(--radius); box-shadow: none; overflow: hidden; }
+.app .panel-title, .app .t-label { font: 600 10.5px/1 var(--font-ui); letter-spacing: .04em; text-transform: uppercase; color: var(--text-dim); }
+.app .panel > header { background: var(--bg-panel-head); border-bottom: 1px solid #1a1a1a; min-height: 28px; }
+.app .panel > header .panel-title { padding: 8px 10px; }
+.app .tabs { background: var(--bg-panel-head); border-bottom: 1px solid #1a1a1a; }
+.app .tab { height: 30px; font: 500 12px/1 var(--font-ui); letter-spacing: 0; text-transform: none; }
+.app .tab.on { color: #fff; }
+.app .tab.on::after { background: var(--accent); height: 2px; }
+.app .badge { font: 600 10px/1 var(--font-ui); letter-spacing: .02em; border-radius: 4px; }
+
+/* Solid blue selection rows (ProPresenter / macOS source lists). */
+.app .list-item.on, .app .svc-item.on, .app .lib-item.on, .app .qs-row.on { background: var(--select); box-shadow: none; color: #fff; }
+.app .list-item.on .list-sub, .app .svc-item.on .svc-sub, .app .svc-item.on .svc-time, .app .lib-item.on .lib-count { color: rgba(255, 255, 255, .72); }
+.app .svc-item.on .svc-icon { color: #fff; }
+.app .list-item, .app .svc-item, .app .lib-item { border-radius: 4px; }
+
+.app .menu, .app .toast { background: #2c2c2c; border-color: #4a4a4a; border-radius: 6px; }
+.app .menu-item { min-height: 24px; padding: 3px 9px; font-size: 12.5px; border-radius: 4px; }
+.app .menu-heading { font: 600 10px/1 var(--font-ui); letter-spacing: .04em; }
+.app .tooltip { background: #f2f2f2; color: #1e1e1e; border-radius: 4px; font-size: 11.5px; }
+.app .modal { border-radius: 8px; border-color: #4a4a4a; background: #2a2a2a; }
+.app .modal-head { padding: 14px 18px 6px; }
+.app .modal-body { padding: 8px 18px 16px; }
+.app .modal-foot { background: #262626; padding: 10px 18px; border-radius: 0 0 8px 8px; }
+.app .drawer { background: #2a2a2a; }
+.app .empty-body { font: 12.5px/1.5 var(--font-ui); }
+
+/* ── Show screen: panes butt together like ProPresenter's ── */
+.app .show { gap: 1px; padding: 0; background: var(--divider); }
+.app .show-side { gap: 1px; background: var(--divider); }
+.app .show .panel, .app .show .grid-col { border: 0; border-radius: 0; box-shadow: none; }
+.app .show .panel { background: #262626; }
+.app .svc-head { background: var(--bg-panel-head); border-bottom: 1px solid #1a1a1a; padding: 4px 6px; }
+.app .svc-name { font: 600 13px/1.2 var(--font-ui); }
+.app .svc-header-title { font: 600 10.5px/1.2 var(--font-ui); letter-spacing: .04em; }
+.app .svc-header { padding: 8px 8px 3px; border-top: 1px solid #1f1f1f; }
+.app .svc-header:first-child { border-top: 0; }
+.app .lib-head { background: var(--bg-panel-head); border-bottom: 1px solid #1a1a1a; margin-bottom: 6px; }
+
+.app .grid-col { background: #1a1a1a; }
+.app .grid-head { padding: 8px 12px; background: var(--bg-panel-head); border-bottom: 1px solid #141414; }
+.app .grid-title { font: 600 15px/1.2 var(--font-ui); letter-spacing: 0; }
+.app .grid-note { font-size: 11.5px; }
+.app .grid-hint { padding: 5px 12px; background: #262626; border-top: 1px solid #141414; font-size: 11px; }
+.app .slides { gap: 10px; padding: 10px 12px 18px; }
+.app .slide-group-head { font: 600 11px/1.2 var(--font-ui); letter-spacing: .02em; text-transform: none; color: var(--text); border-bottom: 0; padding: 4px 2px 0; }
+
+/* Thumbnails: square corners, group colour fills the label bar, orange outline when live. */
+.app .slide { border-radius: 3px; background: #2a2a2a; box-shadow: 0 0 0 1px #0a0a0a, 0 1px 3px rgba(0, 0, 0, .45); }
+.app .slide:hover { transform: none; box-shadow: 0 0 0 1px #0a0a0a, 0 0 0 3px rgba(255, 255, 255, .22); }
+.app .slide:active { transform: none; }
+.app .slide-frame { border-radius: 3px 3px 0 0; }
+.app .slide-label { height: 22px; padding: 0 7px; gap: 6px; border-top: 0; border-radius: 0 0 3px 3px; font-size: 11px; font-weight: 600; background: color-mix(in srgb, var(--group) 82%, #000); color: #fff; text-shadow: 0 1px 1px rgba(0, 0, 0, .45); }
+.app .slide-num { font: 600 10.5px var(--font-ui); color: rgba(255, 255, 255, .8); }
+.app .slide-group { color: #fff; }
+.app .slide-group:not(.first) { opacity: .8; }
+.app .slide-auto, .app .slide-note { color: rgba(255, 255, 255, .85); }
+.app .slide.live { box-shadow: 0 0 0 3px var(--live), 0 2px 10px rgba(0, 0, 0, .5); }
+.app .slide.live .slide-label { background: color-mix(in srgb, var(--group) 82%, #000); }
+.app .slide.next { box-shadow: 0 0 0 1px #0a0a0a, 0 0 0 3px rgba(255, 255, 255, .35); }
+.app .slide.over { outline-color: var(--accent); transform: none; }
+
+/* Right column: preview on top, then transport and the clear row. */
+.app .live-col { gap: 8px; padding: 8px; background: #262626; }
+.app .onair { border-radius: 4px; background: #1e1e1e; border-color: #141414; box-shadow: none; padding: 6px; }
+.app .onair.is-on { border-color: color-mix(in srgb, var(--live) 70%, transparent); box-shadow: none; }
+.app .onair-status { font: 600 10.5px/1 var(--font-ui); letter-spacing: .04em; }
+.app .preview { border-radius: 2px; }
+.app .advance .btn.lg { height: 46px; }
+.app .advance-back { width: 46px; }
+.app .advance-next { font-size: 14px; }
+.app .upnext { border-radius: 4px; border: 1px solid #141414; background: #1e1e1e; min-height: 0; padding: 7px 9px; }
+.app .clears { gap: 4px; }
+.app .clear-btn { min-height: 54px; gap: 3px; border-radius: 4px; border-color: #1c1c1c; background: linear-gradient(#3a3a3a, #313131); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06); }
+.app .clear-btn .clear-label { font-size: 11px; font-weight: 600; }
+.app .clear-btn .clear-state { display: none; }
+.app .clear-btn.has { color: #fff; background: linear-gradient(#4a3a2a, #3d2f22); border-color: color-mix(in srgb, var(--live) 55%, #000); }
+.app .clear-btn.has .icon { color: var(--live); }
+.app .clear-btn.danger.has { background: linear-gradient(#5a2d29, #4a2522); border-color: #8f2d25; }
+.app .clear-btn.danger.has .icon { color: #ff8a7f; }
+.app .clear-btn.danger.has:hover { background: linear-gradient(#e85346, #cc3b2f); }
+.app .clear-btn.danger.has:hover .icon { color: #fff; }
+
+/* Media bin + rail */
+.app .bin { background: #262626; }
+.app .bin-head { background: var(--bg-panel-head); border-bottom: 1px solid #1a1a1a; padding: 6px 8px 6px 10px; margin-bottom: 8px; }
+.app .bin-item { border-radius: 3px; background: #1a1a1a; }
+.app .bin-item:hover { transform: none; border-color: rgba(255, 255, 255, .3); box-shadow: none; }
+.app .bin-rail { border-radius: 0; border: 0; background: #262626; }
+.app .bin-rail span { font: 600 10.5px/1 var(--font-ui); letter-spacing: .04em; }
+
+/* ── other screens: sidebars and toolbars in the same greys ── */
+.app .ed-root, .app .mb-root, .app .settings, .app .bv { background: #1e1e1e; }
+.app .mb-item, .app .ix-card, .app .dsp-card { border-radius: 4px; }
+.app .ctl-macro { border-radius: 4px; }
+.app .bv-side, .app .ed-left, .app .mb-side, .app .set-nav, .app .scr-list { background: #262626; border-right-color: var(--divider); }
+.app .ed-right { background: #262626; border-left-color: var(--divider); }
+.app .set-nav-item { padding: 5px 10px; font-size: 12.5px; border-radius: 4px; }
+.app .set-nav-item.on { background: var(--select); color: #fff; }
+.app .scr-window { border-color: var(--divider); border-radius: 4px; }
+/* Scrolling columns: let panes keep their height instead of squashing. */
+.app .live-col > *, .app .show-side > .lib.collapsed { flex-shrink: 0; }
+.app .main { background: var(--bg); }
+.app .dsp-tab.on { background: linear-gradient(#4a4a4a, #404040); color: #fff; }
+/* Bare range inputs (thumbnail size etc.) get the same slim track as the UI kit slider. */
+.app input[type='range'] { appearance: none; height: 16px; background: transparent; cursor: pointer; }
+.app input[type='range']::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: #111; box-shadow: inset 0 0 0 1px #0a0a0a; }
+.app input[type='range']::-webkit-slider-thumb { appearance: none; width: 13px; height: 13px; margin-top: -4.5px; border-radius: 50%; background: linear-gradient(#f4f4f4, #cfcfcf); box-shadow: 0 1px 3px rgba(0, 0, 0, .6); }

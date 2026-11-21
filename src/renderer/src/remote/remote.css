@@ -1,12 +1,12 @@
 html, body, #root { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font: 16px/1.4 var(--font-ui); -webkit-tap-highlight-color: transparent; }
 .rm { display: flex; flex-direction: column; gap: 12px; padding: 12px 16px calc(16px + env(safe-area-inset-bottom)); max-width: 640px; margin: 0 auto; }
-.rm h1 { font: 400 26px var(--font-display); margin: 0; }
+.rm h1 { font: 600 16px/1.25 var(--font-display); margin: 0; }
 .rm-top { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
 .rm-conn { font-size: 12px; color: var(--text-dim); display: flex; align-items: center; gap: 6px; }
 .rm-conn i { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); display: inline-block; }
 .rm-conn.off i { background: var(--danger); }
 .rm-card { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
-.rm-label { font: 10px/1 var(--font-label); letter-spacing: .14em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px; }
+.rm-label { font: 10px/1 var(--font-label); letter-spacing: .04em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px; }
 .rm-slide { font-size: 22px; line-height: 1.25; white-space: pre-wrap; min-height: 84px; }
 .rm-next { font-size: 15px; color: var(--text-dim); white-space: pre-wrap; max-height: 3.9em; overflow: hidden; }
 .rm-nav { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; }
